@@ -1,0 +1,12 @@
+package com.taller.trivia.dao;
+import java.util.Optional;
+import java.util.List;
+
+import com.taller.trivia.model.Quiz;
+
+public interface QuizDao {
+    Optional<Quiz> findById(Long id);
+    List<Quiz> findAll();
+    Quiz save(Quiz quiz);    
+    void delete(Long id);  
+}
