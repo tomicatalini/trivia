@@ -134,11 +134,8 @@ public class QuestionDaoImpl implements QuestionDao {
             CriteriaQuery<Question> criteriaQuery = criteriaBuilder.createQuery(Question.class);
             Root<Question> root = criteriaQuery.from(Question.class);
 
-            // Consultar todos los usuarios
-            criteriaQuery.select(root);
-
-            // Definir las condiciones de la consulta (en este caso, buscar por nombre)
-            Predicate categoryPredicate = criteriaBuilder.equal(root.get("category"), category);
+            // Definir las condiciones de la consulta (en este caso, buscar por )
+            Predicate categoryPredicate = criteriaBuilder.equal(root.get("category").get("id"), id);
             criteriaQuery.select(root).where(categoryPredicate);
 
             // Ejecutar la consulta
@@ -151,7 +148,7 @@ public class QuestionDaoImpl implements QuestionDao {
             System.err.println("Error al obtener conexión con la db: " + e.getMessage());
             return questions;
         } catch(HibernateException e) {
-            System.err.println("Error al obtener el usuario: " + e.getMessage());
+            System.err.println("Error al obtener las preguntas de la categoría: " + e.getMessage());
             return questions;
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());

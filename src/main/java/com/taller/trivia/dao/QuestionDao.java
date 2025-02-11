@@ -11,6 +11,6 @@ public interface QuestionDao {
     void delete(Long id);
     Optional<Question> findById(Long id);
     List<Question> findAll();    
-    Optional<Question> findAllByCategory(Long id);       
+    List<Question> findAllByCategory(Long id);       
      
 }
