@@ -11,24 +11,24 @@ import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.taller.trivia.model.Question;
+import com.taller.trivia.model.Category;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
-public class QuestionDaoImpl implements QuestionDao {
+public class CategoryDaoImpl implements CategoryDao{
         
     @Autowired
     private SessionFactory sessionFactory;
 
     @Override
-    public Question save(Question question) {
+    public Category save(Category category) {
         try {
             Session ctx = sessionFactory.getCurrentSession();
-            ctx.save(question);
-            return question;
+            ctx.save(category);
+            return category;
             
         } catch(SessionException e){
             System.err.println("Error al obtener conexión con la db: " + e.getMessage());
@@ -46,10 +46,10 @@ public class QuestionDaoImpl implements QuestionDao {
     public void delete(Long id) {
         try {
             Session ctx = sessionFactory.getCurrentSession();
-            Question question = ctx.get(Question.class, id);
+            Category category = ctx.get(Category.class, id);
 
-            if (question != null) {
-                ctx.remove(question);
+            if (category != null) {
+                ctx.remove(category);
             }
             
         } catch(SessionException e){
@@ -63,14 +63,14 @@ public class QuestionDaoImpl implements QuestionDao {
     }
 
     @Override
-    public Optional<Question> findById(Long id) {
+    public Optional<Category> findById(Long id) {
         
         try {
             Session ctx = sessionFactory.getCurrentSession();
-            Question question = ctx.get(Question.class, id);
+            Category category = ctx.get(Category.class, id);
 
-            if (question != null) {
-                return Optional.of(question);
+            if (category != null) {
+                return Optional.of(category);
             } else {
                 return Optional.empty();
             }
@@ -89,70 +89,105 @@ public class QuestionDaoImpl implements QuestionDao {
     }
 
     @Override
-    public List<Question> findAll() {
-        List<Question> questions = new ArrayList<Question>();
+    public List<Category> findAllByState(Boolean state) {
+        List<Category> categories = new ArrayList<Category>();
         
         try {
             Session ctx = sessionFactory.getCurrentSession();
 
             // Crear el CriteriaBuilder y CriteriaQuery
             CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
-            CriteriaQuery<Question> criteriaQuery = criteriaBuilder.createQuery(Question.class);
-            Root<Question> root = criteriaQuery.from(Question.class);
+            CriteriaQuery<Category> criteriaQuery = criteriaBuilder.createQuery(Category.class);
+            Root<Category> root = criteriaQuery.from(Category.class);
 
-            // Consultar todos los usuarios
-            criteriaQuery.select(root);
+            // Definir las condiciones de la consulta (en este caso, buscar por habilitado)
+            Predicate categoryPredicate = criteriaBuilder.equal(root.get("enable"), state);
+            criteriaQuery.select(root).where(categoryPredicate);
 
             // Ejecutar la consulta
-            Query<Question> query = ctx.createQuery(criteriaQuery);
-            questions = query.getResultList();
+            Query<Category> query = ctx.createQuery(criteriaQuery);
+            categories = query.getResultList();
 
-            return questions;
+            return categories;
 
         } catch(SessionException e){
             System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return questions;
+            return categories;
         } catch(HibernateException e) {
             System.err.println("Error al obtener el usuario: " + e.getMessage());
-            return questions;
+            return categories;
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
-            return questions;
+            return categories;
         }
         
     }
 
     @Override
-    public List<Question> findAllByCategory(Long id) {
-        List<Question> questions = new ArrayList<Question>();
+    public List<Category> findAllByTitle(String title) {
+        List<Category> categories = new ArrayList<Category>();
         
         try {
             Session ctx = sessionFactory.getCurrentSession();
 
             // Crear el CriteriaBuilder y CriteriaQuery
             CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
-            CriteriaQuery<Question> criteriaQuery = criteriaBuilder.createQuery(Question.class);
-            Root<Question> root = criteriaQuery.from(Question.class);
+            CriteriaQuery<Category> criteriaQuery = criteriaBuilder.createQuery(Category.class);
+            Root<Category> root = criteriaQuery.from(Category.class);
 
-            // Definir las condiciones de la consulta (en este caso, buscar por id)
-            Predicate categoryPredicate = criteriaBuilder.equal(root.get("category").get("id"), id);
+            // Definir las condiciones de la consulta (en este caso, buscar por habilitado)
+            Predicate categoryPredicate = criteriaBuilder.like(root.get("title"), "%" + title + "%");
             criteriaQuery.select(root).where(categoryPredicate);
 
             // Ejecutar la consulta
-            Query<Question> query = ctx.createQuery(criteriaQuery);
-            questions = query.getResultList();
+            Query<Category> query = ctx.createQuery(criteriaQuery);
+            categories = query.getResultList();
 
-            return questions;
+            return categories;
 
         } catch(SessionException e){
             System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return questions;
+            return categories;
         } catch(HibernateException e) {
-            System.err.println("Error al obtener las preguntas de la categoría: " + e.getMessage());
-            return questions;
+            System.err.println("Error al obtener el usuario: " + e.getMessage());
+            return categories;
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
-            return questions;
+            return categories;
+        }
+        
+    }
+
+    @Override
+    public List<Category> findAll() {
+        List<Category> categories = new ArrayList<Category>();
+        
+        try {
+            Session ctx = sessionFactory.getCurrentSession();
+
+            // Crear el CriteriaBuilder y CriteriaQuery
+            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaQuery<Category> criteriaQuery = criteriaBuilder.createQuery(Category.class);
+            Root<Category> root = criteriaQuery.from(Category.class);
+
+            // Consultar todos los usuarios
+            criteriaQuery.select(root);
+
+            // Ejecutar la consulta
+            Query<Category> query = ctx.createQuery(criteriaQuery);
+            categories = query.getResultList();
+
+            return categories;
+
+        } catch(SessionException e){
+            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
+            return categories;
+        } catch(HibernateException e) {
+            System.err.println("Error al obtener el usuario: " + e.getMessage());
+            return categories;
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            return categories;
         }
         
     }
