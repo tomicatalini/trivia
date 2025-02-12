@@ -27,7 +27,7 @@ public class QuizDaoImpl implements QuizDao {
     public Quiz save(Quiz quiz) {
         try {
             Session ctx = sessionFactory.getCurrentSession();
-            ctx.save(quiz);
+            ctx.merge(quiz);
             return quiz;
             
         } catch(SessionException e){

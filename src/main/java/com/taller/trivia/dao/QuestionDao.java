@@ -12,5 +12,5 @@ public interface QuestionDao {
     Optional<Question> findById(Long id);
     List<Question> findAll();    
     List<Question> findAllByCategory(Long id);       
-     
+    List<Question> findAllQuestionsGame(Long gameId);
 }

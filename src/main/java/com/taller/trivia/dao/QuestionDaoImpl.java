@@ -27,7 +27,7 @@ public class QuestionDaoImpl implements QuestionDao {
     public Question save(Question question) {
         try {
             Session ctx = sessionFactory.getCurrentSession();
-            ctx.save(question);
+            ctx.merge(question);
             return question;
             
         } catch(SessionException e){
@@ -157,4 +157,37 @@ public class QuestionDaoImpl implements QuestionDao {
         
     }
 
+    @Override
+    public List<Question> findAllQuestionsGame(Long gameId) {
+        List<Question> questions = new ArrayList<Question>();
+        
+        try {
+            Session ctx = sessionFactory.getCurrentSession();
+
+            // Crear el CriteriaBuilder y CriteriaQuery
+            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaQuery<Question> criteriaQuery = criteriaBuilder.createQuery(Question.class);
+            Root<Question> root = criteriaQuery.from(Question.class);
+
+            // Definir las condiciones de la consulta (en este caso, buscar por id)
+            Predicate gamePredicate = criteriaBuilder.isMember(gameId, root.get("games"));
+            criteriaQuery.select(root).where(gamePredicate);
+
+            // Ejecutar la consulta
+            Query<Question> query = ctx.createQuery(criteriaQuery);
+            questions = query.getResultList();
+
+            return questions;
+
+        } catch(SessionException e){
+            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
+            return questions;
+        } catch(HibernateException e) {
+            System.err.println("Error al obtener las preguntas de una partida" + e.getMessage());
+            return questions;
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            return questions;
+        }
+    };
 }

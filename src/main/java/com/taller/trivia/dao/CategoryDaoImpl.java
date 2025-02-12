@@ -27,7 +27,7 @@ public class CategoryDaoImpl implements CategoryDao{
     public Category save(Category category) {
         try {
             Session ctx = sessionFactory.getCurrentSession();
-            ctx.save(category);
+            ctx.merge(category);
             return category;
             
         } catch(SessionException e){

@@ -11,7 +11,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.taller.trivia.model.Rol;
 import com.taller.trivia.model.User;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -28,7 +27,7 @@ public class UserDaoImpl implements UserDao {
     public User save(User user) {
         try {
             Session ctx = sessionFactory.getCurrentSession();
-            ctx.save(user);
+            ctx.merge(user);
             return user;
             
         } catch(SessionException e){
