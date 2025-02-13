@@ -15,6 +15,7 @@ public class UserDTO {
     private Long id;
     private String name;
     private String email;
-    private Rol role;
+    private String password;
+    private Rol rol;
     private List<GameDTO> games;
 }

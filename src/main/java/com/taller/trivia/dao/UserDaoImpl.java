@@ -27,7 +27,7 @@ public class UserDaoImpl implements UserDao {
     public User save(User user) {
         try {
             Session ctx = sessionFactory.getCurrentSession();
-            ctx.merge(user);
+            ctx.persist(user);
             return user;
             
         } catch(SessionException e){
@@ -40,6 +40,38 @@ public class UserDaoImpl implements UserDao {
             System.err.println("Error: " + e.getMessage());
             return null;
         }        
+    }
+
+    @Override
+    public User update(Long userId, User user) {
+        try {
+            Session ctx = sessionFactory.getCurrentSession();
+            User userPersisted = ctx.get(User.class, userId);
+
+            // Verificar si el usuario existe en la base de datos
+            if (userPersisted != null) {
+                // Actualizar los campos del usuario persistido con los valores nuevos
+                userPersisted.setName(user.getName());
+                userPersisted.setEmail(user.getEmail());
+                // Agrega otros campos según sea necesario
+
+                // Guardar los cambios
+                ctx.merge(userPersisted);  // O bien puedes dejar que Hibernate lo haga automáticamente al final de la transacción
+
+                return userPersisted;  // Devuelve el usuario actualizado
+            } else {
+                System.err.println("El usuario con ID " + userId + " no se encuentra.");
+                return null;  // Retorna null o podrías lanzar una excepción dependiendo de tu enfoque
+            }
+
+        } catch (SessionException e) {
+            System.err.println("Error al obtener conexión con la base de datos: " + e.getMessage());
+        } catch (HibernateException e) {
+            System.err.println("Error al actualizar el usuario: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Error inesperado: " + e.getMessage());
+        }
+        return null;  // Retorna null si hubo un error o si no se encontró el usuario
     }
 
     @Override
