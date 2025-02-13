@@ -46,7 +46,7 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public UserDTO save(UserDTO userDto) {
-        // Validación básica de los datos
+        
         if (userDto == null) {
             throw new IllegalArgumentException("El objeto userDto no puede ser nulo");
         }
@@ -55,24 +55,44 @@ public class UserServiceImpl implements UserService{
             throw new IllegalArgumentException("Los campos 'name', 'email' y 'password' son obligatorios");
         }
 
-        // Creación del usuario
         User user = this.DTOToUser(userDto);
-
-        //Encripto la contraseña
         String encodedPass = passwordEncoder.encode(userDto.getPassword());
+
         user.setPassword(encodedPass);
-
-        // Guardar el usuario en la base de datos
         user = repository.save(user);
-
-        // Convertir la entidad guardada a un DTO y devolverlo
         return this.userToDTO(user);
     }
+
+    @Override
+    public UserDTO update(Long userId, UserDTO userDto) {
+        User user = this.repository.update(userId, this.DTOToUser(userDto));        
+        return this.userToDTO(user);
+    };
 
     @Override
     public void delete(Long id) {
         repository.delete(id);
     }
+
+    @Override
+    public UserDTO updatePass(UserDTO userDto, String oldPass, String newPass) {
+        if (!oldPass.isBlank() && !newPass.isBlank()) {
+            
+            if (this.validateUserPass(userDto, newPass)) {
+                User user = this.DTOToUser(userDto);
+                String encodedPass = passwordEncoder.encode(userDto.getPassword());
+
+                user.setPassword(encodedPass);
+                user = repository.save(user);
+                return this.userToDTO(user);
+            } else {
+                throw new RuntimeException("Invalid user");
+            }
+
+        } else {
+            throw new RuntimeException("Both or any password are blank");
+        }
+    };
 
     @Override
     public Boolean validateUserPass(UserDTO userDto, String pass) {
