@@ -45,18 +45,18 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public UserDTO save(UserDTO userDto) {
+    public UserDTO save(UserDTO userDto, String password) {
         
         if (userDto == null) {
             throw new IllegalArgumentException("El objeto userDto no puede ser nulo");
         }
         
-        if (userDto.getName() == null || userDto.getEmail() == null || userDto.getPassword() == null) {
+        if (userDto.getName() == null || userDto.getEmail() == null || password.isBlank()) {
             throw new IllegalArgumentException("Los campos 'name', 'email' y 'password' son obligatorios");
         }
 
         User user = this.DTOToUser(userDto);
-        String encodedPass = passwordEncoder.encode(userDto.getPassword());
+        String encodedPass = passwordEncoder.encode(password);
 
         user.setPassword(encodedPass);
         user = repository.save(user);
@@ -78,9 +78,9 @@ public class UserServiceImpl implements UserService{
     public UserDTO updatePass(UserDTO userDto, String oldPass, String newPass) {
         if (!oldPass.isBlank() && !newPass.isBlank()) {
             
-            if (this.validateUserPass(userDto, newPass)) {
+            if (this.validateUserPass(userDto, oldPass)) {
                 User user = this.DTOToUser(userDto);
-                String encodedPass = passwordEncoder.encode(userDto.getPassword());
+                String encodedPass = passwordEncoder.encode(newPass);
 
                 user.setPassword(encodedPass);
                 user = repository.save(user);

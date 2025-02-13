@@ -14,7 +14,7 @@ public interface UserService {
     Optional<UserDTO> getById(Long id);
     Optional<UserDTO> getByName(String name);
     Optional<UserDTO> getByEmail(String email);
-    UserDTO save(UserDTO user);
+    UserDTO save(UserDTO user, String password);
     UserDTO update(Long userId, UserDTO userDto);
     void delete(Long id);    
     Boolean validateUserPass(UserDTO userDto, String pass);
