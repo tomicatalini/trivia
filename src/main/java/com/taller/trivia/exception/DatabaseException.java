@@ -1,4 +1,4 @@
-package com.taller.trivia.error;
+package com.taller.trivia.exception;
 
 public class DatabaseException extends RuntimeException{
     public DatabaseException(String message) {

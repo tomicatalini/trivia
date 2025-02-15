@@ -1,4 +1,4 @@
-package com.taller.trivia.error;
+package com.taller.trivia.exception;
 
 public class ServiceException extends RuntimeException {
     public ServiceException(String message) {
