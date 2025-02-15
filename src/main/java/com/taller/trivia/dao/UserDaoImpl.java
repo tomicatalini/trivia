@@ -1,17 +1,18 @@
 package com.taller.trivia.dao;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionException;
 import org.hibernate.SessionFactory;
-import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.model.User;
+import com.taller.trivia.util.ErrorMessageLoader;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -23,246 +24,137 @@ public class UserDaoImpl implements UserDao {
     @Autowired
     private SessionFactory sessionFactory;
 
+    // Método para manejar errores de métodos que devuelven un valor
+    private <T> T executeQuery(Supplier<T> function) {
+        try {
+            return function.get();
+        } catch (SessionException e) {
+            throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_CONNECTION_ERROR"));
+        } catch (HibernateException e) {
+            throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        } catch (Exception e) {
+            throw new RuntimeException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
+        }
+    }
+
+    // // Método para manejar errores de métodos que no devuelven nada (void)
+    // private void executeVoidQuery(Runnable function) {
+    //     try {
+    //         function.run();
+    //     } catch (SessionException e) {
+    //         throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_CONNECTION_ERROR"));
+    //     } catch (HibernateException e) {
+    //         throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+    //     } catch (Exception e) {
+    //         throw new RuntimeException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
+    //     }
+    // }
+
     @Override
     public User save(User user) {
-        try {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
-            ctx.persist(user);
-            return user;
-            
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return null;
-        }catch(HibernateException e) {
-            System.err.println("Error al guardar el usuario: " + e.getMessage());
-            return null;
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return null;
-        }        
+            return ctx.merge(user);
+        });      
     }
 
     @Override
     public User update(Long userId, User user) {
-        try {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
             User userPersisted = ctx.get(User.class, userId);
 
-            // Verificar si el usuario existe en la base de datos
-            if (userPersisted != null) {
-                // Actualizar los campos del usuario persistido con los valores nuevos
-                userPersisted.setName(user.getName());
-                userPersisted.setEmail(user.getEmail());
-                // Agrega otros campos según sea necesario
-
-                // Guardar los cambios
-                ctx.merge(userPersisted);  // O bien puedes dejar que Hibernate lo haga automáticamente al final de la transacción
-
-                return userPersisted;  // Devuelve el usuario actualizado
-            } else {
-                System.err.println("El usuario con ID " + userId + " no se encuentra.");
-                return null;  // Retorna null o podrías lanzar una excepción dependiendo de tu enfoque
+            if (userPersisted == null) {
+                throw new DatabaseException(ErrorMessageLoader.getMessage("USER_NOT_FOUND", userId));
             }
 
-        } catch (SessionException e) {
-            System.err.println("Error al obtener conexión con la base de datos: " + e.getMessage());
-        } catch (HibernateException e) {
-            System.err.println("Error al actualizar el usuario: " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Error inesperado: " + e.getMessage());
-        }
-        return null;  // Retorna null si hubo un error o si no se encontró el usuario
+            
+            userPersisted.setName(user.getName());
+            userPersisted.setEmail(user.getEmail());
+
+            return ctx.merge(userPersisted); 
+            
+        });
     }
 
     @Override
-    public void delete(Long id) {
-        try {
+    public boolean delete(Long id) {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
             User user = ctx.get(User.class, id);
 
             if (user != null) {
                 ctx.remove(user);
+                return true;
             }
             
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-        } catch(HibernateException e) {
-            System.err.println("Error al guardar el usuario: " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-        
+            return false;
+        });   
     }
 
     @Override
     public Optional<User> findById(Long id) {
-        
-        try {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
-            User user = ctx.get(User.class, id);
-
-            if (user != null) {
-                return Optional.of(user);
-            } else {
-                return Optional.empty();
-            }
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return Optional.empty();
-        } catch(HibernateException e) {
-            System.err.println("Error al eliminar el usuario: " + e.getMessage());
-            return Optional.empty();
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return Optional.empty();
-        }    
-        
+            return Optional.ofNullable(ctx.get(User.class, id));
+        }); 
     }
 
     @Override
     public List<User> findAll() {
-        List<User> users = new ArrayList<User>();
-        
-        try {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
-
-            // Crear el CriteriaBuilder y CriteriaQuery
             CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
             CriteriaQuery<User> criteriaQuery = criteriaBuilder.createQuery(User.class);
             Root<User> root = criteriaQuery.from(User.class);
-
-            // Consultar todos los usuarios
             criteriaQuery.select(root);
 
-            // Ejecutar la consulta
-            Query<User> query = ctx.createQuery(criteriaQuery);
-            users = query.getResultList();
-
-            return users;
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return users;
-        } catch(HibernateException e) {
-            System.err.println("Error al obtener el usuario: " + e.getMessage());
-            return users;
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return users;
-        }
-        
+            return ctx.createQuery(criteriaQuery).getResultList();
+        });   
     }
 
     @Override
     public List<User> findAllByRol(String rol) {
-        List<User> users = new ArrayList<User>();
-        
-        try {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
-
-            // Crear el CriteriaBuilder y CriteriaQuery
             CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
             CriteriaQuery<User> criteriaQuery = criteriaBuilder.createQuery(User.class);
             Root<User> root = criteriaQuery.from(User.class);
-
-            // Consultar todos los usuarios
             criteriaQuery.select(root);
 
-            // Definir las condiciones de la consulta (en este caso, buscar por nombre)
             Predicate rolPredicate = criteriaBuilder.equal(root.get("rol"), rol);
             criteriaQuery.select(root).where(rolPredicate);
 
-            // Ejecutar la consulta
-            Query<User> query = ctx.createQuery(criteriaQuery);
-            users = query.getResultList();
-
-            return users;
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return users;
-        } catch(HibernateException e) {
-            System.err.println("Error al obtener el usuario por rol: " + e.getMessage());
-            return users;
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return users;
-        }
-        
+            return ctx.createQuery(criteriaQuery).getResultList();
+        });     
     }
 
     @Override
     public Optional<User> findByName(String name) {
-
-        try {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
-
-            // Crear el CriteriaBuilder y CriteriaQuery
             CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
             CriteriaQuery<User> criteriaQuery = criteriaBuilder.createQuery(User.class);
             Root<User> root = criteriaQuery.from(User.class);
-
-            // Definir las condiciones de la consulta (en este caso, buscar por rol)
             Predicate namePredicate = criteriaBuilder.equal(root.get("name"), name);
             criteriaQuery.select(root).where(namePredicate);
-
-            // Consultar todos los usuarios
-            criteriaQuery.select(root);
-
-            // Ejecutar la consulta
-            Query<User> query = ctx.createQuery(criteriaQuery);
-            User user = (User) query.uniqueResult();
             
-            return Optional.of(user);
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return Optional.empty();
-        } catch(HibernateException e) {
-            System.err.println("Error al obtener el usuario: " + e.getMessage());
-            return Optional.empty();
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return Optional.empty();
-        }
-        
+            return Optional.ofNullable(ctx.createQuery(criteriaQuery).getSingleResult());
+        });        
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
-
-        try {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
-
-            // Crear el CriteriaBuilder y CriteriaQuery
             CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
             CriteriaQuery<User> criteriaQuery = criteriaBuilder.createQuery(User.class);
             Root<User> root = criteriaQuery.from(User.class);
 
-            // Definir las condiciones de la consulta (en este caso, buscar por nombre)
-            Predicate emailPredicate = criteriaBuilder.equal(root.get("name"), email);
+            Predicate emailPredicate = criteriaBuilder.equal(root.get("email"), email);
             criteriaQuery.select(root).where(emailPredicate);
 
-            // Consultar todos los usuarios
-            criteriaQuery.select(root);
-
-            // Ejecutar la consulta
-            Query<User> query = ctx.createQuery(criteriaQuery);
-            User user = (User) query.uniqueResult();
-            
-            return Optional.of(user);
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return Optional.empty();
-        } catch(HibernateException e) {
-            System.err.println("Error al obtener el usuario: " + e.getMessage());
-            return Optional.empty();
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return Optional.empty();
-        }
-        
+            return Optional.ofNullable(ctx.createQuery(criteriaQuery).getSingleResult());
+        });        
     }
 }

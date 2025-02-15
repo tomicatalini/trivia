@@ -3,7 +3,7 @@ package com.taller.trivia.util;
 import java.text.MessageFormat;
 import java.util.ResourceBundle;
 
-public class ErrorMassageLoader {
+public class ErrorMessageLoader {
     private static final ResourceBundle resourceBundle = ResourceBundle.getBundle("messages");
 
     public static String getMessage(String code, Object... args) {

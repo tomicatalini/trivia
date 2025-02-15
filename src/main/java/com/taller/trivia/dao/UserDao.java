@@ -13,5 +13,5 @@ public interface UserDao {
     List<User> findAllByRol(String rol);
     User save(User user);
     User update(Long userId, User user);
-    void delete(Long id);
+    boolean delete(Long id);
 }
