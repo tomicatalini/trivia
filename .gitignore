@@ -34,4 +34,4 @@ build/
 
 ### Configuración
 pom.xml
-src/main/resources/*.properties
+src/main/resources/application.properties
