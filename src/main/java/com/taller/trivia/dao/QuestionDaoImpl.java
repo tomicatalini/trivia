@@ -15,6 +15,7 @@ import com.taller.trivia.model.Question;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
@@ -100,8 +101,12 @@ public class QuestionDaoImpl implements QuestionDao {
             CriteriaQuery<Question> criteriaQuery = criteriaBuilder.createQuery(Question.class);
             Root<Question> root = criteriaQuery.from(Question.class);
 
+            //Obtengo las respuestas
+            //root.fetch("category", JoinType.LEFT);
+            root.fetch("answers", JoinType.LEFT);
+
             // Consultar todos los usuarios
-            criteriaQuery.select(root);
+            criteriaQuery.select(root).distinct(true);
 
             // Ejecutar la consulta
             Query<Question> query = ctx.createQuery(criteriaQuery);
