@@ -15,6 +15,8 @@ import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.model.User;
 import com.taller.trivia.util.ErrorMessageLoader;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
@@ -23,18 +25,22 @@ import jakarta.persistence.criteria.Root;
 @Repository
 public class UserDaoImpl implements UserDao {
 
-    @Autowired
-    private SessionFactory sessionFactory;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     // Método para manejar errores de métodos que devuelven un valor
     private <T> T executeQuery(Supplier<T> function) {
         try {
+            
             return function.get();
         } catch (SessionException e) {
+            System.out.println("Entro al SessionException (DAO)");
             throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_CONNECTION_ERROR"));
         } catch (HibernateException e) {
+            System.out.println("Entro al HibernateException (DAO)");
             throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         } catch (Exception e) {
+            System.out.println("Entro al Exception (DAO)");
             throw new RuntimeException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
         }
     }
@@ -42,16 +48,14 @@ public class UserDaoImpl implements UserDao {
     @Override
     public User save(User user) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            return ctx.merge(user);
+            return entityManager.merge(user);
         });      
     }
 
     @Override
     public User update(Long userId, User user) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            User userPersisted = ctx.get(User.class, userId);
+            User userPersisted = entityManager.find(User.class, userId);
 
             if (userPersisted == null) {
                 throw new DatabaseException(ErrorMessageLoader.getMessage("USER_NOT_FOUND", userId));
@@ -61,7 +65,7 @@ public class UserDaoImpl implements UserDao {
             userPersisted.setName(user.getName());
             userPersisted.setEmail(user.getEmail());
 
-            return ctx.merge(userPersisted); 
+            return entityManager.merge(userPersisted); 
             
         });
     }
@@ -69,11 +73,10 @@ public class UserDaoImpl implements UserDao {
     @Override
     public boolean delete(Long id) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            User user = ctx.get(User.class, id);
+            User user = entityManager.find(User.class, id);
 
             if (user != null) {
-                ctx.remove(user);
+                entityManager.remove(user);
                 return true;
             }
             
@@ -84,29 +87,26 @@ public class UserDaoImpl implements UserDao {
     @Override
     public Optional<User> findById(Long id) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            return Optional.ofNullable(ctx.get(User.class, id));
+            return Optional.ofNullable(entityManager.find(User.class, id));
         }); 
     }
 
     @Override
     public List<User> findAll() {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<User> criteriaQuery = criteriaBuilder.createQuery(User.class);
             Root<User> root = criteriaQuery.from(User.class);
             criteriaQuery.select(root);
 
-            return ctx.createQuery(criteriaQuery).getResultList();
+            return entityManager.createQuery(criteriaQuery).getResultList();
         });   
     }
 
     @Override
     public List<User> findAllByRol(String rol) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<User> criteriaQuery = criteriaBuilder.createQuery(User.class);
             Root<User> root = criteriaQuery.from(User.class);
             criteriaQuery.select(root);
@@ -114,36 +114,34 @@ public class UserDaoImpl implements UserDao {
             Predicate rolPredicate = criteriaBuilder.equal(root.get("rol"), rol);
             criteriaQuery.select(root).where(rolPredicate);
 
-            return ctx.createQuery(criteriaQuery).getResultList();
+            return entityManager.createQuery(criteriaQuery).getResultList();
         });     
     }
 
     @Override
     public Optional<User> findByName(String name) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<User> criteriaQuery = criteriaBuilder.createQuery(User.class);
             Root<User> root = criteriaQuery.from(User.class);
             Predicate namePredicate = criteriaBuilder.equal(root.get("name"), name);
             criteriaQuery.select(root).where(namePredicate);
             
-            return Optional.ofNullable(ctx.createQuery(criteriaQuery).getSingleResult());
+            return Optional.ofNullable(entityManager.createQuery(criteriaQuery).getSingleResult());
         });        
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<User> criteriaQuery = criteriaBuilder.createQuery(User.class);
             Root<User> root = criteriaQuery.from(User.class);
 
             Predicate emailPredicate = criteriaBuilder.equal(root.get("email"), email);
             criteriaQuery.select(root).where(emailPredicate);
 
-            return Optional.ofNullable(ctx.createQuery(criteriaQuery).getSingleResult());
+            return Optional.ofNullable(entityManager.createQuery(criteriaQuery).getSingleResult());
         });        
     }
 }
