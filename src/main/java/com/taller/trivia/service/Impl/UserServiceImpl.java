@@ -9,8 +9,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.taller.trivia.dao.UserDao;
 import com.taller.trivia.dto.UserDTO;
+import com.taller.trivia.exception.BusinessException;
 import com.taller.trivia.model.User;
 import com.taller.trivia.service.UserService;
+import com.taller.trivia.util.ErrorMessageLoader;
 
 public class UserServiceImpl implements UserService{
 
@@ -47,12 +49,8 @@ public class UserServiceImpl implements UserService{
     @Override
     public UserDTO save(UserDTO userDto, String password) {
         
-        if (userDto == null) {
-            throw new IllegalArgumentException("El objeto userDto no puede ser nulo");
-        }
-        
-        if (userDto.getName() == null || userDto.getEmail() == null || password.isBlank()) {
-            throw new IllegalArgumentException("Los campos 'name', 'email' y 'password' son obligatorios");
+        if (userDto == null || userDto.getName() == null || userDto.getEmail() == null) {
+            throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED_MULT", "nombre, email"));
         }
 
         User user = this.DTOToUser(userDto);
