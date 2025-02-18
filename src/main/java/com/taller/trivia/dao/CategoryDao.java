@@ -8,7 +8,7 @@ import com.taller.trivia.model.Category;
 public interface CategoryDao {
     
     Category save(Category category);
-    void delete(Long id);
+    boolean delete(Long id);
     Optional<Category> findById(Long id);
     List<Category> findAllByState(Boolean state);
     List<Category> findAllByTitle(String title);

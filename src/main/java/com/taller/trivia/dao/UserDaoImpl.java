@@ -9,6 +9,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionException;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.model.User;
@@ -19,6 +20,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
+@Repository
 public class UserDaoImpl implements UserDao {
 
     @Autowired
@@ -36,19 +38,6 @@ public class UserDaoImpl implements UserDao {
             throw new RuntimeException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
         }
     }
-
-    // // Método para manejar errores de métodos que no devuelven nada (void)
-    // private void executeVoidQuery(Runnable function) {
-    //     try {
-    //         function.run();
-    //     } catch (SessionException e) {
-    //         throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_CONNECTION_ERROR"));
-    //     } catch (HibernateException e) {
-    //         throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
-    //     } catch (Exception e) {
-    //         throw new RuntimeException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
-    //     }
-    // }
 
     @Override
     public User save(User user) {

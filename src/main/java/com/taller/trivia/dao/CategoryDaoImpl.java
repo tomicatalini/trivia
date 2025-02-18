@@ -1,195 +1,117 @@
 package com.taller.trivia.dao;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionException;
 import org.hibernate.SessionFactory;
-import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
+import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.model.Category;
+import com.taller.trivia.util.ErrorMessageLoader;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
+@Repository
 public class CategoryDaoImpl implements CategoryDao{
         
     @Autowired
     private SessionFactory sessionFactory;
 
-    @Override
-    public Category save(Category category) {
+    // Método para manejar errores de métodos que devuelven un valor
+    private <T> T executeQuery(Supplier<T> function) {
         try {
-            Session ctx = sessionFactory.getCurrentSession();
-            ctx.merge(category);
-            return category;
-            
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return null;
-        }catch(HibernateException e) {
-            System.err.println("Error al guardar el usuario: " + e.getMessage());
-            return null;
+            return function.get();
+        } catch (SessionException e) {
+            throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_CONNECTION_ERROR"));
+        } catch (HibernateException e) {
+            throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return null;
-        }        
+            throw new RuntimeException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
+        }
     }
 
     @Override
-    public void delete(Long id) {
-        try {
+    public Category save(Category category) {
+        return executeQuery(() -> {
+            Session ctx = sessionFactory.getCurrentSession();
+            return ctx.merge(category);
+        });          
+    }
+
+    @Override
+    public boolean delete(Long id) {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
             Category category = ctx.get(Category.class, id);
 
             if (category != null) {
                 ctx.remove(category);
+                return true;
             }
             
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-        } catch(HibernateException e) {
-            System.err.println("Error al guardar el usuario: " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-        
+            return false;
+        });        
     }
 
     @Override
-    public Optional<Category> findById(Long id) {
-        
-        try {
+    public Optional<Category> findById(Long id) {        
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
-            Category category = ctx.get(Category.class, id);
-
-            if (category != null) {
-                return Optional.of(category);
-            } else {
-                return Optional.empty();
-            }
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return Optional.empty();
-        } catch(HibernateException e) {
-            System.err.println("Error al eliminar el usuario: " + e.getMessage());
-            return Optional.empty();
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return Optional.empty();
-        }    
-        
-    }
-
-    @Override
-    public List<Category> findAllByState(Boolean state) {
-        List<Category> categories = new ArrayList<Category>();
-        
-        try {
-            Session ctx = sessionFactory.getCurrentSession();
-
-            // Crear el CriteriaBuilder y CriteriaQuery
-            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
-            CriteriaQuery<Category> criteriaQuery = criteriaBuilder.createQuery(Category.class);
-            Root<Category> root = criteriaQuery.from(Category.class);
-
-            // Definir las condiciones de la consulta (en este caso, buscar por habilitado)
-            Predicate categoryPredicate = criteriaBuilder.equal(root.get("enable"), state);
-            criteriaQuery.select(root).where(categoryPredicate);
-
-            // Ejecutar la consulta
-            Query<Category> query = ctx.createQuery(criteriaQuery);
-            categories = query.getResultList();
-
-            return categories;
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return categories;
-        } catch(HibernateException e) {
-            System.err.println("Error al obtener el usuario: " + e.getMessage());
-            return categories;
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return categories;
-        }
-        
-    }
-
-    @Override
-    public List<Category> findAllByTitle(String title) {
-        List<Category> categories = new ArrayList<Category>();
-        
-        try {
-            Session ctx = sessionFactory.getCurrentSession();
-
-            // Crear el CriteriaBuilder y CriteriaQuery
-            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
-            CriteriaQuery<Category> criteriaQuery = criteriaBuilder.createQuery(Category.class);
-            Root<Category> root = criteriaQuery.from(Category.class);
-
-            // Definir las condiciones de la consulta (en este caso, buscar por habilitado)
-            Predicate categoryPredicate = criteriaBuilder.like(root.get("title"), "%" + title + "%");
-            criteriaQuery.select(root).where(categoryPredicate);
-
-            // Ejecutar la consulta
-            Query<Category> query = ctx.createQuery(criteriaQuery);
-            categories = query.getResultList();
-
-            return categories;
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return categories;
-        } catch(HibernateException e) {
-            System.err.println("Error al obtener el usuario: " + e.getMessage());
-            return categories;
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return categories;
-        }
-        
+            return Optional.ofNullable(ctx.get(Category.class, id));
+        });
     }
 
     @Override
     public List<Category> findAll() {
-        List<Category> categories = new ArrayList<Category>();
-        
-        try {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
-
-            // Crear el CriteriaBuilder y CriteriaQuery
             CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
             CriteriaQuery<Category> criteriaQuery = criteriaBuilder.createQuery(Category.class);
             Root<Category> root = criteriaQuery.from(Category.class);
-
-            // Consultar todos los usuarios
             criteriaQuery.select(root);
 
-            // Ejecutar la consulta
-            Query<Category> query = ctx.createQuery(criteriaQuery);
-            categories = query.getResultList();
-
-            return categories;
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return categories;
-        } catch(HibernateException e) {
-            System.err.println("Error al obtener el usuario: " + e.getMessage());
-            return categories;
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return categories;
-        }
-        
+            return ctx.createQuery(criteriaQuery).getResultList();
+        });        
     }
 
+    @Override
+    public List<Category> findAllByState(Boolean state) {
+        return executeQuery(() -> {
+            Session ctx = sessionFactory.getCurrentSession();
+            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaQuery<Category> criteriaQuery = criteriaBuilder.createQuery(Category.class);
+            Root<Category> root = criteriaQuery.from(Category.class);
+            
+            //Filtro aquellas categoria cone estado "habilitado"
+            Predicate categoryPredicate = criteriaBuilder.equal(root.get("enable"), state);
+            criteriaQuery.select(root).where(categoryPredicate);
+
+            return ctx.createQuery(criteriaQuery).getResultList();
+        });        
+    }
+
+    @Override
+    public List<Category> findAllByTitle(String title) {
+        return executeQuery(() -> {
+            Session ctx = sessionFactory.getCurrentSession();
+            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaQuery<Category> criteriaQuery = criteriaBuilder.createQuery(Category.class);
+            Root<Category> root = criteriaQuery.from(Category.class);
+            
+            //Filtro por categoria
+            Predicate categoryPredicate = criteriaBuilder.like(root.get("title"), "%" + title + "%");
+            criteriaQuery.select(root).where(categoryPredicate);
+
+            return ctx.createQuery(criteriaQuery).getResultList();
+        });        
+    }
 }

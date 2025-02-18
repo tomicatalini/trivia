@@ -8,7 +8,7 @@ import com.taller.trivia.model.Question;
 public interface QuestionDao {
     
     Question save(Question question);
-    void delete(Long id);
+    boolean delete(Long id);
     Optional<Question> findById(Long id);
     List<Question> findAll();    
     List<Question> findAllByCategory(Long id);       

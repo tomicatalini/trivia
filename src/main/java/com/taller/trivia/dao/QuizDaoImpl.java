@@ -1,50 +1,72 @@
 package com.taller.trivia.dao;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionException;
 import org.hibernate.SessionFactory;
-import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
+import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.model.Quiz;
+import com.taller.trivia.util.ErrorMessageLoader;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 
-
+@Repository
 public class QuizDaoImpl implements QuizDao {
 
     @Autowired
     private SessionFactory sessionFactory;
 
-    @Override
-    public Quiz save(Quiz quiz) {
+        // Método para manejar errores de métodos que devuelven un valor
+    private <T> T executeQuery(Supplier<T> function) {
         try {
-            Session ctx = sessionFactory.getCurrentSession();
-            ctx.merge(quiz);
-            return quiz;
-            
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return null;
-        }catch(HibernateException e) {
-            System.err.println("Error al guardar el usuario: " + e.getMessage());
-            return null;
+            return function.get();
+        } catch (SessionException e) {
+            throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_CONNECTION_ERROR"));
+        } catch (HibernateException e) {
+            throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return null;
-        }        
+            throw new RuntimeException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
+        }
     }
 
     @Override
-    public void delete(Long id) {
-        try {
+    public Quiz save(Quiz quiz) {
+        return executeQuery(() -> {
+            Session ctx = sessionFactory.getCurrentSession();
+            return ctx.merge(quiz);
+        });      
+    }
+
+    @Override
+    public Quiz update(Long quizId, Quiz quiz) {
+        return executeQuery(() -> {
+            Session ctx = sessionFactory.getCurrentSession();
+            Quiz quizPersisted = ctx.get(Quiz.class, quizId);
+
+            if (quizPersisted == null) {
+                throw new DatabaseException(ErrorMessageLoader.getMessage("QUIZ_NOT_FOUND", quizId));
+            }
+
+            
+            quizPersisted.setName(quiz.getName());
+            quizPersisted.setUrl(quiz.getUrl());
+
+            return ctx.merge(quizPersisted);            
+        });
+    }
+
+    @Override
+    public boolean delete(Long id) {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
             Quiz quiz = ctx.get(Quiz.class, id);
 
@@ -52,74 +74,29 @@ public class QuizDaoImpl implements QuizDao {
                 ctx.remove(quiz);
             }
             
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-        } catch(HibernateException e) {
-            System.err.println("Error al guardar el usuario: " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-        
+            return false;
+        });        
     }
 
     @Override
     public Optional<Quiz> findById(Long id) {
-        
-        try {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
-            Quiz quiz = ctx.get(Quiz.class, id);
-
-            if (quiz != null) {
-                return Optional.of(quiz);
-            } else {
-                return Optional.empty();
-            }
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return Optional.empty();
-        } catch(HibernateException e) {
-            System.err.println("Error al eliminar el usuario: " + e.getMessage());
-            return Optional.empty();
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return Optional.empty();
-        }    
-        
+            return Optional.ofNullable(ctx.get(Quiz.class, id));
+        });        
     }
 
     @Override
     public List<Quiz> findAll() {
-        List<Quiz> quizies = new ArrayList<Quiz>();
-        
-        try {
+        return executeQuery(() -> {
             Session ctx = sessionFactory.getCurrentSession();
-
-            // Crear el CriteriaBuilder y CriteriaQuery
             CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
             CriteriaQuery<Quiz> criteriaQuery = criteriaBuilder.createQuery(Quiz.class);
             Root<Quiz> root = criteriaQuery.from(Quiz.class);
-
-            // Consultar todos los usuarios
             criteriaQuery.select(root);
 
-            // Ejecutar la consulta
-            Query<Quiz> query = ctx.createQuery(criteriaQuery);
-            quizies = query.getResultList();
-
-            return quizies;
-
-        } catch(SessionException e){
-            System.err.println("Error al obtener conexión con la db: " + e.getMessage());
-            return quizies;
-        } catch(HibernateException e) {
-            System.err.println("Error al obtener el usuario: " + e.getMessage());
-            return quizies;
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return quizies;
-        }
-        
+            return ctx.createQuery(criteriaQuery).getResultList();
+        });
     }
 
 }

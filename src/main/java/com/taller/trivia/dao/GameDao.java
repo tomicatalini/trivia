@@ -8,7 +8,7 @@ import com.taller.trivia.model.Game;
 
 public interface GameDao {
     Game save(Game game);
-    void delete(Long id);
+    boolean delete(Long id);
     Optional<Game> findById(Long id);
     List<Game> findAll();    
     List<Game> findAllUserGames(Long userId);
