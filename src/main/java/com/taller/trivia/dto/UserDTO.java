@@ -1,9 +1,12 @@
 package com.taller.trivia.dto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.taller.trivia.model.Rol;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,10 +14,12 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserDTO {
     private Long id;
     private String name;
     private String email;
     private Rol rol;
-    private List<GameDTO> games;
+    private List<GameDTO> games = new ArrayList<>();
 }

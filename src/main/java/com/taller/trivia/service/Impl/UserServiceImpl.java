@@ -6,20 +6,25 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.taller.trivia.dao.UserDao;
 import com.taller.trivia.dto.UserDTO;
 import com.taller.trivia.exception.BusinessException;
+import com.taller.trivia.exception.ServiceException;
 import com.taller.trivia.model.User;
 import com.taller.trivia.service.UserService;
 import com.taller.trivia.util.ErrorMessageLoader;
 
+@Service
 public class UserServiceImpl implements UserService{
 
     @Autowired
     private UserDao repository;
-
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     @Override
     public List<UserDTO> getAll() {
@@ -46,6 +51,7 @@ public class UserServiceImpl implements UserService{
                          .map(this::userToDTO);
     }
 
+    @Transactional
     @Override
     public UserDTO save(UserDTO userDto, String password) {
         
@@ -61,17 +67,24 @@ public class UserServiceImpl implements UserService{
         return this.userToDTO(user);
     }
 
+    @Transactional
     @Override
     public UserDTO update(Long userId, UserDTO userDto) {
         User user = this.repository.update(userId, this.DTOToUser(userDto));        
         return this.userToDTO(user);
     };
 
-    @Override
-    public void delete(Long id) {
-        repository.delete(id);
+    @Transactional
+    @Override    
+    public boolean delete(Long id) {
+        if(!repository.delete(id)) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }
+
+        return true;
     }
 
+    @Transactional
     @Override
     public UserDTO updatePass(UserDTO userDto, String oldPass, String newPass) {
         if (!oldPass.isBlank() && !newPass.isBlank()) {
@@ -84,27 +97,32 @@ public class UserServiceImpl implements UserService{
                 user = repository.save(user);
                 return this.userToDTO(user);
             } else {
-                throw new RuntimeException("Invalid user");
+                throw new BusinessException(ErrorMessageLoader.getMessage("AUTH_BAD_CREDENTIALS"));
             }
 
         } else {
-            throw new RuntimeException("Both or any password are blank");
+            throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED_MULT", "antigua contraseña y nueva contraseña"));
         }
     };
 
     @Override
-    public Boolean validateUserPass(UserDTO userDto, String pass) {
-        User user;
+    public boolean validateUserPass(UserDTO userDto, String pass) {
+        if(userDto.getEmail().isBlank() && userDto.getName().isBlank()) {
+            throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED","usuario o email"));
+        }
 
-        if (!userDto.getEmail().isEmpty()) {
-            user = this.repository.findByEmail(userDto.getEmail()).orElseThrow( () -> new RuntimeException("User not found"));
-        } else if(!userDto.getName().isEmpty()) {
-            user = this.repository.findByName(userDto.getName()).orElseThrow( () -> new RuntimeException("User not found"));
-        } else {
-            throw new RuntimeException("User not found");
+        String userPass = "";
+        if (!userDto.getEmail().isBlank()) {
+            userPass = this.repository.findByEmail(userDto.getEmail())
+                           .orElseThrow( () -> new ServiceException(ErrorMessageLoader.getMessage("USER_NOT_FOUND")))
+                           .getPassword();
+        } else if(!userDto.getName().isBlank()) {
+            userPass = this.repository.findByName(userDto.getName())
+                           .orElseThrow( () -> new ServiceException(ErrorMessageLoader.getMessage("USER_NOT_FOUND")))
+                           .getPassword();
         }
         
-        return this.passwordEncoder.matches(pass, user.getPassword());
+        return this.passwordEncoder.matches(pass, userPass);
     };
 
     //Metodos de soporte
