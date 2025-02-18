@@ -17,6 +17,7 @@ import com.taller.trivia.util.ErrorMessageLoader;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
@@ -77,6 +78,8 @@ public class QuestionDaoImpl implements QuestionDao {
             CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
             CriteriaQuery<Question> criteriaQuery = criteriaBuilder.createQuery(Question.class);
             Root<Question> root = criteriaQuery.from(Question.class);
+
+            //root.fetch("answers", JoinType.LEFT);
             criteriaQuery.select(root);
 
             return ctx.createQuery(criteriaQuery).getResultList();
