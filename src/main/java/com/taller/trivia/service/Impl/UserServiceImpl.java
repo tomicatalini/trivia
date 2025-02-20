@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.taller.trivia.dao.UserDao;
 import com.taller.trivia.dto.UserDTO;
 import com.taller.trivia.exception.BusinessException;
+import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.exception.ServiceException;
 import com.taller.trivia.model.User;
 import com.taller.trivia.service.UserService;
@@ -49,20 +50,26 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Optional<UserDTO> getByName(String name) {
+    public List<UserDTO> getByName(String name) {
         try {
             return repository.findByName(name)
-                             .map(this::userToDTO);
-        } catch (Exception e) {
+                             .stream()
+                             .map(this::userToDTO)
+                             .collect(Collectors.toList());
+        } catch (DatabaseException e) {
             throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        } catch (Exception e) {
+            throw new ServiceException(e.getMessage());
         }
     }
 
     @Override
-    public Optional<UserDTO> getByEmail(String mail) {
+    public List<UserDTO> getByEmail(String mail) {
         try {
             return repository.findByEmail(mail)
-                             .map(this::userToDTO);
+                             .stream()
+                             .map(this::userToDTO)
+                             .collect(Collectors.toList());
         } catch (Exception e) {
             throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         }
@@ -113,48 +120,54 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public UserDTO updatePass(UserDTO userDto, String oldPass, String newPass) {
+    public boolean updatePass(String username, String oldPass, String newPass) {
+        System.out.println("username: " + username);
+        System.out.println("oldPass: " + oldPass);
+        System.out.println("newPass: " + newPass);
         try {
-            if (!oldPass.isBlank() && !newPass.isBlank()) {
-                if (this.validateUserPass(userDto, oldPass)) {
-                    User user = this.DTOToUser(userDto);
-                    String encodedPass = passwordEncoder.encode(newPass);
-
-                    user.setPassword(encodedPass);
-                    user = repository.save(user);
-                    return this.userToDTO(user);
-                } else {
-                    throw new BusinessException(ErrorMessageLoader.getMessage("AUTH_BAD_CREDENTIALS"));
-                }
-            } else {
-                throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED_MULT", "antigua contraseña y nueva contraseña"));
+            if (username.isBlank()) {
+                throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED", "USUARIO"));
             }
+
+            User user = this.repository.findByEmail(username)
+                           .orElseGet(() -> 
+                                this.repository.findByName(username)
+                                               .orElseThrow( () -> new BusinessException(ErrorMessageLoader.getMessage("USER_NOT_FOUND", username))
+                                               )
+                           );
+
+            if (!this.passwordEncoder.matches(oldPass, user.getPassword())) {
+                throw new BusinessException(ErrorMessageLoader.getMessage("USER_PASSWORD_MISMATCH"));
+            }
+            
+            user.setPassword(passwordEncoder.encode(newPass));
+            user = repository.save(user);
+            return user != null ? true : false;
+
         } catch (BusinessException e) {
             throw e; // La excepción de validación se lanza tal cual
         } catch (Exception e) {
-            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+            throw new ServiceException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
         }
     }
 
     @Override
-    public boolean validateUserPass(UserDTO userDto, String pass) {
+    public boolean validateUserPass(String username, String password) {
         try {
-            if (userDto.getEmail().isBlank() && userDto.getName().isBlank()) {
-                throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED", "usuario o email"));
+            if (username.isBlank()) {
+                throw new BusinessException(ErrorMessageLoader.getMessage("USER_INVALID_CREDENTIALS"));
             }
 
-            String userPass = "";
-            if (!userDto.getEmail().isBlank()) {
-                userPass = this.repository.findByEmail(userDto.getEmail())
-                                           .orElseThrow(() -> new ServiceException(ErrorMessageLoader.getMessage("USER_NOT_FOUND")))
-                                           .getPassword();
-            } else if (!userDto.getName().isBlank()) {
-                userPass = this.repository.findByName(userDto.getName())
-                                           .orElseThrow(() -> new ServiceException(ErrorMessageLoader.getMessage("USER_NOT_FOUND")))
-                                           .getPassword();
-            }
+            String userPass = this.repository.findByEmail(username)
+                           .map(user -> user.getPassword())
+                           .orElseGet(() -> 
+                                this.repository.findByName(username)
+                                               .map(user -> user.getPassword())
+                                               .orElseThrow( () -> new BusinessException(ErrorMessageLoader.getMessage("USER_NOT_FOUND", "EMAL o NOMBRE", username))
+                                               )
+                           );
 
-            return this.passwordEncoder.matches(pass, userPass);
+            return this.passwordEncoder.matches(password, userPass);
         } catch (BusinessException e) {
             throw e; // La excepción de validación se lanza tal cual
         } catch (Exception e) {
@@ -165,6 +178,7 @@ public class UserServiceImpl implements UserService {
     // Métodos de soporte
     public UserDTO userToDTO(User user) {
         UserDTO userDto = new UserDTO();
+        userDto.setId(user.getId());
         userDto.setName(user.getName());
         userDto.setEmail(user.getEmail());
         userDto.setRol(user.getRol());
@@ -173,6 +187,7 @@ public class UserServiceImpl implements UserService {
 
     public User DTOToUser(UserDTO userDto) {
         User user = new User();
+        user.setId(user.getId());
         user.setName(userDto.getName());
         user.setEmail(userDto.getEmail());
         user.setRol(userDto.getRol());

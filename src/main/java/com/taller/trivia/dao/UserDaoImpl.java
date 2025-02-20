@@ -30,8 +30,7 @@ public class UserDaoImpl implements UserDao {
 
     // Método para manejar errores de métodos que devuelven un valor
     private <T> T executeQuery(Supplier<T> function) {
-        try {
-            
+        try {            
             return function.get();
         } catch (SessionException e) {
             System.out.println("Entro al SessionException (DAO)");
@@ -41,7 +40,8 @@ public class UserDaoImpl implements UserDao {
             throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         } catch (Exception e) {
             System.out.println("Entro al Exception (DAO)");
-            throw new RuntimeException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -60,10 +60,10 @@ public class UserDaoImpl implements UserDao {
             if (userPersisted == null) {
                 throw new DatabaseException(ErrorMessageLoader.getMessage("USER_NOT_FOUND", userId));
             }
-
             
             userPersisted.setName(user.getName());
             userPersisted.setEmail(user.getEmail());
+            userPersisted.setRol(user.getRol());
 
             return entityManager.merge(userPersisted); 
             
@@ -124,6 +124,7 @@ public class UserDaoImpl implements UserDao {
             CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<User> criteriaQuery = criteriaBuilder.createQuery(User.class);
             Root<User> root = criteriaQuery.from(User.class);
+
             Predicate namePredicate = criteriaBuilder.equal(root.get("name"), name);
             criteriaQuery.select(root).where(namePredicate);
             

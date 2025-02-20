@@ -8,11 +8,11 @@ import com.taller.trivia.dto.UserDTO;
 public interface UserService {
     List<UserDTO> getAll();
     Optional<UserDTO> getById(Long id);
-    Optional<UserDTO> getByName(String name);
-    Optional<UserDTO> getByEmail(String email);
+    List<UserDTO> getByName(String name);
+    List<UserDTO> getByEmail(String email);
     UserDTO save(UserDTO user, String password);
     UserDTO update(Long userId, UserDTO userDto);
     boolean delete(Long id);    
-    boolean validateUserPass(UserDTO userDto, String pass);
-    UserDTO updatePass(UserDTO userDto, String oldPass, String newPass);
+    boolean validateUserPass(String username, String password);
+    boolean updatePass(String username, String oldPass, String newPass);
 }

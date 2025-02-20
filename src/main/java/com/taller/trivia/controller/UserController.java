@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.ErrorHandler;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,9 +15,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.taller.trivia.dto.LoginDTO;
 import com.taller.trivia.dto.UserDTO;
 import com.taller.trivia.exception.BusinessException;
 import com.taller.trivia.service.UserService;
+import com.taller.trivia.util.ErrorMessageLoader;
+import com.taller.trivia.util.ResponseHandler;
 
 import jakarta.validation.Valid;
 
@@ -32,12 +36,14 @@ public class UserController {
 
     // Obtener todos los usuarios
     @GetMapping
-    public ResponseEntity<List<UserDTO>> getAllUsers() {
+    public ResponseEntity<?> getAllUsers() {
         try {
             List<UserDTO> users = userService.getAll();
-            return ResponseEntity.ok(users);
+            return ResponseHandler.handleResponse(users);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                                        ErrorMessageLoader.getMessage("SERVER_ERROR"),
+                                                        e.getMessage());
         }
     }
 
@@ -46,10 +52,16 @@ public class UserController {
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
         try {
             return userService.getById(id)
-                    .map(userDto -> ResponseEntity.ok(userDto))
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+                             .<ResponseEntity<?>>map(ResponseHandler::handleResponse)
+                             .orElseGet(() -> ResponseHandler.handleErrorResponse(
+                                    HttpStatus.NOT_FOUND, 
+                                    ErrorMessageLoader.getMessage("USER_NOT_FOUND", "ID", id), 
+                                    ""
+                                ));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al obtener el usuario.");
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                    ErrorMessageLoader.getMessage("SERVER_ERROR"),
+                                    e.getMessage());
         }
     }
 
@@ -57,11 +69,19 @@ public class UserController {
     @GetMapping("/name/{name}")
     public ResponseEntity<?> getUserByName(@PathVariable String name) {
         try {
-            return userService.getByName(name)
-                    .map(userDto -> ResponseEntity.ok(userDto))
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+            List<UserDTO> users = userService.getByName(name);
+            if (users.isEmpty()) {
+                return ResponseHandler.handleErrorResponse(
+                    HttpStatus.NOT_FOUND, 
+                    ErrorMessageLoader.getMessage("USER_NOT_FOUND", "NOMBRE", name),
+                    "" 
+                );
+            }
+            return ResponseHandler.handleResponse(users);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al obtener el usuario por nombre.");
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                    ErrorMessageLoader.getMessage("SERVER_ERROR"),
+                                    e.getMessage());
         }
     }
 
@@ -69,11 +89,19 @@ public class UserController {
     @GetMapping("/email/{email}")
     public ResponseEntity<?> getUserByEmail(@PathVariable String email) {
         try {
-            return userService.getByEmail(email)
-                    .map(userDto -> ResponseEntity.ok(userDto))
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+            List<UserDTO> users = userService.getByEmail(email);
+            if (users.isEmpty()) {
+                return ResponseHandler.handleErrorResponse(
+                    HttpStatus.NOT_FOUND, 
+                    ErrorMessageLoader.getMessage("USER_NOT_FOUND", "MAIL", email),
+                    "" 
+                );
+            }
+            return ResponseHandler.handleResponse(users);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al obtener el usuario por email.");
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                    ErrorMessageLoader.getMessage("SERVER_ERROR"),
+                                    e.getMessage());
         }
     }
 
@@ -81,10 +109,12 @@ public class UserController {
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody UserDTO userDto) {
         try {
-            UserDTO createdUser = userService.save(userDto, userDto.getPassword());
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+            UserDTO user = userService.save(userDto, userDto.getPassword());
+            return ResponseHandler.handleResponse(user);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al crear el usuario.");
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                    ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"),
+                                    e.getMessage());
         }
     }
 
@@ -92,10 +122,12 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody @Valid UserDTO userDto) {
         try {
-            UserDTO updatedUser = userService.update(id, userDto);
-            return ResponseEntity.ok(updatedUser);
+            UserDTO user = userService.update(id, userDto);
+            return ResponseHandler.handleResponse(user);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar el usuario.");
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                    ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"),
+                                    e.getMessage());
         }
     }
 
@@ -103,40 +135,48 @@ public class UserController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         try {
-            userService.delete(id);
-            return ResponseEntity.noContent().build();
+            boolean result = userService.delete(id);
+            return ResponseHandler.handleResponse(result);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar el usuario.");
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                    ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"),
+                                    e.getMessage());
         }
     }
 
     // Validar credenciales de usuario
     @PostMapping("/validate")
-    public ResponseEntity<?> validateUser(@RequestBody UserDTO userDto, @RequestParam String password) {
+    public ResponseEntity<?> validateUser(@RequestBody LoginDTO login) {
         try {
-            boolean isValid = userService.validateUserPass(userDto, password);
+            boolean isValid = userService.validateUserPass(login.getUsername(), login.getPassword());
             return isValid 
-                ? ResponseEntity.ok(true)
-                : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                ? ResponseHandler.handleResponse(isValid)
+                : ResponseHandler.handleErrorResponse(HttpStatus.UNAUTHORIZED,
+                                    ErrorMessageLoader.getMessage("AUTH_BAD_CREDENTIALS"),
+                                    "");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al validar las credenciales.");
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                    ErrorMessageLoader.getMessage("SERVER_ERROR"),
+                                    e.getMessage());
         }
     }
 
     // Actualizar contraseña
-    @PutMapping("/update-password")
-    public ResponseEntity<?> updatePassword(
-            @RequestBody UserDTO userDto, 
-            @RequestParam String oldPassword, 
-            @RequestParam String newPassword) {
-        
+    @PutMapping("/pass")
+    public ResponseEntity<?> updatePassword(@RequestBody LoginDTO login) {        
         try {
-            UserDTO updatedUser = userService.updatePass(userDto, oldPassword, newPassword);
-            return ResponseEntity.ok(updatedUser);
+            boolean result = userService.updatePass(login.getUsername(), login.getOldPassword(), login.getPassword());
+            return ResponseHandler.handleResponse(result);
         } catch (BusinessException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error en los datos de la contraseña.");
+            return ResponseHandler.handleErrorResponse(
+                                    HttpStatus.BAD_REQUEST,
+                                    ErrorMessageLoader.getMessage("USER_PASSWORD_MISMATCH"),
+                                    e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar la contraseña.");
+            return ResponseHandler.handleErrorResponse(
+                                    HttpStatus.INTERNAL_SERVER_ERROR,
+                                    ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"),
+                                    e.getMessage());
         }
     }
 }
