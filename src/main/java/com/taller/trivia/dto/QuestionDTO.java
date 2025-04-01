@@ -14,7 +14,7 @@ import lombok.Setter;
 public class QuestionDTO {
     private Long id;
     private String question;
-    private String type; //Multiple choise, true or false
+    private String type; //Multiple choice, true or false
     private Level level;
     private QuizDTO quiz;
     private List<AnswerDTO> answers;
