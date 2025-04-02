@@ -11,7 +11,7 @@ public interface QuestionService {
     void delete(Long id);
     Optional<QuestionDTO> getById(Long id);
     List<QuestionDTO> getAll();
-    List<QuestionDTO> getByCategory(String name);
+    List<QuestionDTO> getByCategory(Long id);
     List<QuestionDTO> getQuestionsGame(Long gameId);
 
 }
