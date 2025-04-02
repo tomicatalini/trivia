@@ -28,4 +28,10 @@ public class Answer {
     @ManyToOne
     @JoinColumn(name = "question_id")
     private Question question;
+
+    public Answer(Long id, String answer, boolean valid) {
+        this.id = id;
+        this.answer = answer;
+        this.valid = valid;
+    }
 }

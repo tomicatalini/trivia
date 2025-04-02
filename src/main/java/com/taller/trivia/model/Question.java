@@ -49,4 +49,13 @@ public class Question {
     @ManyToMany(mappedBy = "questions")
     private List<Game> games;
 
+    public Question(Long id, String question, String type, Level level, Category category, List<Answer> answers) {
+        this.id = id;
+        this.question = question;
+        this.type = type;
+        this.level = level;
+        this.category = category;
+        this.answers = answers;
+    }
+
 }

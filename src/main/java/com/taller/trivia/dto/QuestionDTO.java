@@ -3,7 +3,6 @@ package com.taller.trivia.dto;
 import java.util.List;
 
 import com.taller.trivia.model.Level;
-import com.taller.trivia.model.Category;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +16,15 @@ public class QuestionDTO {
     private String question;
     private String type; //Multiple choice, true or false
     private Level level;
-    private Category category;
+    private CategoryDTO category;
     private List<AnswerDTO> answers;
+
+    public QuestionDTO(Long id, String question, String type, Level level, CategoryDTO category, List<AnswerDTO> answers) {
+        this.id = id;
+        this.question = question;
+        this.type = type;
+        this.level = level;
+        this.category = category;
+        this.answers = answers;
+    }
 }

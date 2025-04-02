@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.taller.trivia.service.QuestionService;
+import com.taller.trivia.util.DTOMapper;
 import com.taller.trivia.dao.QuestionDao;
 import com.taller.trivia.dto.QuestionDTO;
 import com.taller.trivia.model.Question;
@@ -28,10 +29,10 @@ public class QuestionServiceImpl implements QuestionService{
             throw new IllegalArgumentException("Los campos 'question', 'type', 'level' y 'category' son obligatorios");
         }
 
-        Question question = this.DTOToQuestion(questionDto);
+        Question question = DTOMapper.toQuestionEntity(questionDto);
 
         question = repository.save(question);
-        return this.questionToDTO(question);
+        return DTOMapper.toQuestionDTO(question);
     }
 
     @Override
@@ -42,52 +43,27 @@ public class QuestionServiceImpl implements QuestionService{
     @Override
     public Optional<QuestionDTO> getById(Long id) {
         return repository.findById(id)
-                         .map(this::questionToDTO);
+                         .map(DTOMapper::toQuestionDTO);
     }
 
     @Override
     public List<QuestionDTO> getAll() {
         return repository.findAll().stream()
-                         .map(this::questionToDTO)
+                         .map(DTOMapper::toQuestionDTO)
                          .collect(Collectors.toList());
     }
 
     @Override
     public List<QuestionDTO> getByCategory(Long id) {
         return repository.findAllByCategory(id).stream()
-                         .map(this::questionToDTO)
+                         .map(DTOMapper::toQuestionDTO)
                          .collect(Collectors.toList());
     }
 
     @Override
     public List<QuestionDTO> getQuestionsGame(Long gameId) {
         return repository.findAllQuestionsGame(gameId).stream()
-                         .map(this::questionToDTO)
+                         .map(DTOMapper::toQuestionDTO)
                          .collect(Collectors.toList());
-    }   
-   
-    //Metodos de soporte
-    public QuestionDTO questionToDTO(Question question) {
-        QuestionDTO questionDTO = new QuestionDTO();
-        
-        questionDTO.setQuestion(question.getQuestion());
-        questionDTO.setType(question.getType());
-        questionDTO.setLevel(question.getLevel());
-        questionDTO.setCategory(question.getCategory());
-
-        
-        return questionDTO;
     }
-
-    public Question DTOToQuestion(QuestionDTO questionDTO) {
-        Question question = new Question();
-        
-        question.setQuestion(questionDTO.getQuestion());
-        question.setType(questionDTO.getType());
-        question.setLevel(questionDTO.getLevel());
-        question.setCategory(questionDTO.getCategory());
-        
-        return question;
-    }
-
 }

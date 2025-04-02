@@ -23,4 +23,11 @@ public class UserDTO {
     private String password;
     private Rol rol;
     private List<GameDTO> games = new ArrayList<>();
+
+    public UserDTO(Long id, String name, String email, Rol rol) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.rol = rol;
+    }
 }

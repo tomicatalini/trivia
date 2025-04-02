@@ -33,4 +33,12 @@ public class User {
     //Relaciones
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Game> games;
+
+    public User(Long id, String name, String email, Rol rol, String password) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.rol = rol;
+        this.password = password;
+    }
 }
