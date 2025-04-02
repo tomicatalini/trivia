@@ -19,5 +19,5 @@ public class GameDTO {
     private Date endDate;
     private UserDTO user;
     private QuizDTO quiz;
-    private List<QuestionDTO> questions;
+    private List<GameQuestionDTO> gameQuestions;
 }

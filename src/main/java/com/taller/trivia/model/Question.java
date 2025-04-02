@@ -10,7 +10,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -46,8 +45,8 @@ public class Question {
     @OneToMany(mappedBy = "answer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> answers;
 
-    @ManyToMany(mappedBy = "questions")
-    private List<Game> games;
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
+    private List<GameQuestion> gameQuestions;
 
     public Question(Long id, String question, String type, Level level, Category category, List<Answer> answers) {
         this.id = id;

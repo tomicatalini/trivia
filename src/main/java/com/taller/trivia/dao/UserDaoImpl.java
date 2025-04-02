@@ -5,16 +5,11 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
-import org.hibernate.Session;
 import org.hibernate.SessionException;
-import org.hibernate.SessionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
-
 import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.model.User;
 import com.taller.trivia.util.ErrorMessageLoader;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.CriteriaBuilder;

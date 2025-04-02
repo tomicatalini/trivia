@@ -8,9 +8,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -43,11 +42,6 @@ public class Game {
     @JoinColumn(name = "quiz_id")
     private Quiz quiz;
 
-    @ManyToMany
-    @JoinTable(
-        name = "game_questions",
-        joinColumns = @JoinColumn(name = "game_id"),
-        inverseJoinColumns = @JoinColumn(name = "question_id")
-    )
-    private List<Question> questions;
+    @OneToMany(mappedBy = "game", cascade = jakarta.persistence.CascadeType.ALL)
+    private List<GameQuestion> gameQuestions;
 }

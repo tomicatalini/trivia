@@ -18,6 +18,7 @@ public class QuestionDTO {
     private Level level;
     private CategoryDTO category;
     private List<AnswerDTO> answers;
+    private Integer responseTime;
 
     public QuestionDTO(Long id, String question, String type, Level level, CategoryDTO category, List<AnswerDTO> answers) {
         this.id = id;

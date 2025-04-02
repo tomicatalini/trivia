@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 import com.taller.trivia.dto.AnswerDTO;
 import com.taller.trivia.dto.CategoryDTO;
 import com.taller.trivia.dto.GameDTO;
+import com.taller.trivia.dto.GameQuestionDTO;
 import com.taller.trivia.dto.QuestionDTO;
 import com.taller.trivia.dto.QuizDTO;
 import com.taller.trivia.dto.UserDTO;
@@ -14,6 +15,7 @@ import com.taller.trivia.model.Question;
 import com.taller.trivia.model.Quiz;
 import com.taller.trivia.model.User;
 import com.taller.trivia.model.Game;
+import com.taller.trivia.model.GameQuestion;
 
 
 public class DTOMapper {
@@ -127,8 +129,8 @@ public class DTOMapper {
                 game.getEndDate(),
                 toUserDTO(game.getUser()),
                 toQuizDTO(game.getQuiz()),
-                game.getQuestions().stream()
-                        .map(DTOMapper::toQuestionDTO)
+                game.getGameQuestions().stream()
+                        .map(DTOMapper::toGameQuestionDTO)
                         .collect(Collectors.toList())
         );
     }
@@ -141,9 +143,27 @@ public class DTOMapper {
                 dto.getEndDate(),
                 toUserEntity(dto.getUser()),
                 toQuizEntity(dto.getQuiz()),
-                dto.getQuestions().stream()
-                        .map(DTOMapper::toQuestionEntity)
+                dto.getGameQuestions().stream()
+                        .map(DTOMapper::toGameQuestionEntity)
                         .collect(Collectors.toList())
+        );
+    }
+
+    public static GameQuestion toGameQuestionEntity(GameQuestionDTO gameQuestionDTO) {
+        return new GameQuestion(
+                toGameEntity(gameQuestionDTO.getGame()),
+                toQuestionEntity(gameQuestionDTO.getQuestion()),
+                gameQuestionDTO.getStart(),
+                gameQuestionDTO.getFinish()
+        );
+    }
+
+    public static GameQuestionDTO toGameQuestionDTO(GameQuestion gameQuestion) {
+        return new GameQuestionDTO(
+            toGameDTO(gameQuestion.getGame()),
+            toQuestionDTO(gameQuestion.getQuestion()),
+            gameQuestion.getStart(),
+            gameQuestion.getFinish()
         );
     }
 }
