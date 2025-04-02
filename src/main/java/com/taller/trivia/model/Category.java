@@ -33,9 +33,16 @@ public class Category {
     private String description;
 
     @Column(nullable = false)
-    private Boolean enable;
+    private boolean enable;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions;
+
+    public Category(Long id, String title, String description, boolean enable) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.enable = enable;
+    }
 
 }
