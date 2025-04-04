@@ -1,14 +1,18 @@
 package com.taller.trivia.service.Impl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.taller.trivia.service.GameService;
 import com.taller.trivia.service.QuestionService;
 import com.taller.trivia.util.DTOMapper;
 import com.taller.trivia.dao.QuestionDao;
+import com.taller.trivia.dto.GameDTO;
+import com.taller.trivia.dto.GameQuestionDTO;
 import com.taller.trivia.dto.QuestionDTO;
 import com.taller.trivia.model.Question;
 
@@ -16,6 +20,9 @@ public class QuestionServiceImpl implements QuestionService{
 
     @Autowired
     private QuestionDao repository;
+
+    @Autowired
+    private GameService gameService;
     
     @Override
     public QuestionDTO save(QuestionDTO questionDto) {
@@ -65,5 +72,20 @@ public class QuestionServiceImpl implements QuestionService{
         return repository.findAllQuestionsGame(gameId).stream()
                          .map(DTOMapper::toQuestionDTO)
                          .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<GameQuestionDTO> getRandomQuestions(Long quizId, Long categoryId, Long gameId, int numberOfQuestions) {
+        GameDTO gameDTO = gameService.getGameById(gameId);        
+        List<Question> questions = repository.findRandomQuestions(categoryId, quizId, numberOfQuestions);
+        
+        return questions.stream()
+                .map((question) -> {
+                    GameQuestionDTO gameQuestionDTO = new GameQuestionDTO();
+                    gameQuestionDTO.setQuestion(DTOMapper.toQuestionDTO(question));
+                    gameQuestionDTO.setGame(gameDTO);
+                    return gameQuestionDTO;
+                })
+                .collect(Collectors.toList());
     }
 }

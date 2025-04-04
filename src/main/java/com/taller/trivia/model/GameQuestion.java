@@ -25,17 +25,18 @@ public class GameQuestion {
     private GameQuestionId id = new GameQuestionId();
 
     @ManyToOne
-    @MapsId("gameId")  // Referencia a Game
+    @MapsId("gameId")
     @JoinColumn(name = "game_id")
     private Game game;
 
     @ManyToOne
-    @MapsId("questionId")  // Referencia a Question
+    @MapsId("questionId")
     @JoinColumn(name = "question_id")
     private Question question;
 
     private Date start;
     private Date finish;
+    private boolean valid; // true si la respuesta es correcta, false si no lo es
 
     public GameQuestion(Game game, Question question, Date start, Date finish) {
         this.game = game;

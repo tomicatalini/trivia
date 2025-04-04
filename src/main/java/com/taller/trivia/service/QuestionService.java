@@ -3,6 +3,7 @@ package com.taller.trivia.service;
 import java.util.List;
 import java.util.Optional;
 
+import com.taller.trivia.dto.GameQuestionDTO;
 import com.taller.trivia.dto.QuestionDTO;
 
 public interface QuestionService {
@@ -13,5 +14,6 @@ public interface QuestionService {
     List<QuestionDTO> getAll();
     List<QuestionDTO> getByCategory(Long id);
     List<QuestionDTO> getQuestionsGame(Long gameId);
+    List<GameQuestionDTO> getRandomQuestions(Long quizId, Long categoryId, Long gameId, int numberOfQuestions);
 
 }

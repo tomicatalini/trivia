@@ -9,6 +9,8 @@ import org.hibernate.Session;
 import org.hibernate.SessionException;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.taller.trivia.exception.DatabaseException;
@@ -116,4 +118,20 @@ public class QuestionDaoImpl implements QuestionDao {
             return ctx.createQuery(criteriaQuery).getResultList();
         });
     };
+
+    @Override
+    public List<Question> findRandomQuestions(Long categoryId, Long quizId, int limit) {
+        String sql = "SELECT * FROM question " +
+                     "WHERE category_id = :categoryId AND quiz_id = :quizId " +
+                     "ORDER BY RAND() LIMIT :limit";
+        
+        return executeQuery(() -> {
+            Session ctx = sessionFactory.getCurrentSession();
+            return ctx.createNativeQuery(sql, Question.class)
+                    .setParameter("categoryId", categoryId)
+                    .setParameter("quizId", quizId)
+                    .setParameter("limit", limit)
+                    .getResultList();
+        });
+    }
 }
