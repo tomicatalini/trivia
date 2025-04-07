@@ -9,13 +9,12 @@ import org.hibernate.Session;
 import org.hibernate.SessionException;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.model.Question;
 import com.taller.trivia.util.ErrorMessageLoader;
+import com.taller.trivia.model.Level; // Import the Level enum
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -120,18 +119,35 @@ public class QuestionDaoImpl implements QuestionDao {
     };
 
     @Override
-    public List<Question> findRandomQuestions(Long categoryId, Long quizId, int limit) {
-        String sql = "SELECT * FROM question " +
+    public List<Question> findRandomQuestions(Long categoryId, Long quizId, String level_String, int limit) {
+        if (level_String.isBlank()) {
+            String sql = "SELECT * FROM question " +
                      "WHERE category_id = :categoryId AND quiz_id = :quizId " +
                      "ORDER BY RAND() LIMIT :limit";
+
+            return executeQuery(() -> {
+                Session ctx = sessionFactory.getCurrentSession();
+                return ctx.createNativeQuery(sql, Question.class)
+                        .setParameter("categoryId", categoryId)
+                        .setParameter("quizId", quizId)
+                        .setParameter("limit", limit)
+                        .getResultList();
+            });
+        } else {
+            String sql = "SELECT * FROM question " +
+                     "WHERE category_id = :categoryId AND quiz_id = :quizId AND level = :levelValue " +
+                     "ORDER BY RAND() LIMIT :limit";
+
+            return executeQuery(() -> {
+                Session ctx = sessionFactory.getCurrentSession();
+                return ctx.createNativeQuery(sql, Question.class)
+                        .setParameter("categoryId", categoryId)
+                        .setParameter("quizId", quizId)
+                        .setParameter("levelValue", Level.valueOf(level_String))
+                        .setParameter("limit", limit)
+                        .getResultList();
+            });
+        }
         
-        return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            return ctx.createNativeQuery(sql, Question.class)
-                    .setParameter("categoryId", categoryId)
-                    .setParameter("quizId", quizId)
-                    .setParameter("limit", limit)
-                    .getResultList();
-        });
     }
 }

@@ -14,6 +14,6 @@ public interface QuestionService {
     List<QuestionDTO> getAll();
     List<QuestionDTO> getByCategory(Long id);
     List<QuestionDTO> getQuestionsGame(Long gameId);
-    List<GameQuestionDTO> getRandomQuestions(Long quizId, Long categoryId, Long gameId, int numberOfQuestions);
+    List<GameQuestionDTO> getRandomQuestions(Long quizId, Long categoryId, Long gameId, String level, int numberOfQuestions);
 
 }

@@ -13,5 +13,5 @@ public interface QuestionDao {
     List<Question> findAll();    
     List<Question> findAllByCategory(Long id);       
     List<Question> findAllQuestionsGame(Long gameId);
-    List<Question> findRandomQuestions(Long categoryId, Long quizId, int limit);
+    List<Question> findRandomQuestions(Long categoryId, Long quizId, String level, int limit);
 }

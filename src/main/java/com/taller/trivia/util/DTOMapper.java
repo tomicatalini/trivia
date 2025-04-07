@@ -163,7 +163,8 @@ public class DTOMapper {
             toGameDTO(gameQuestion.getGame()),
             toQuestionDTO(gameQuestion.getQuestion()),
             gameQuestion.getStart(),
-            gameQuestion.getFinish()
+            gameQuestion.getFinish(),
+            gameQuestion.isValid()
         );
     }
 }

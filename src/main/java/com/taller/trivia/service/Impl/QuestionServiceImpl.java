@@ -1,6 +1,5 @@
 package com.taller.trivia.service.Impl;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -75,9 +74,9 @@ public class QuestionServiceImpl implements QuestionService{
     }
 
     @Override
-    public List<GameQuestionDTO> getRandomQuestions(Long quizId, Long categoryId, Long gameId, int numberOfQuestions) {
+    public List<GameQuestionDTO> getRandomQuestions(Long quizId, Long categoryId, Long gameId, String level, int numberOfQuestions) {
         GameDTO gameDTO = gameService.getGameById(gameId);        
-        List<Question> questions = repository.findRandomQuestions(categoryId, quizId, numberOfQuestions);
+        List<Question> questions = repository.findRandomQuestions(categoryId, quizId, level, numberOfQuestions);
         
         return questions.stream()
                 .map((question) -> {

@@ -12,6 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProgressDTO {
+    private Long questionId;
     private Date start;
     private Date finish;
     private boolean valid; // true si la respuesta es correcta, false si no lo es

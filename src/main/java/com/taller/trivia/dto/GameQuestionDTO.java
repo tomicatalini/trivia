@@ -12,8 +12,12 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GameQuestionDTO {
+    //Relación
     private GameDTO game;
     private QuestionDTO question;
+
+    //Datos extras
     private Date start;
     private Date finish;
+    private boolean valid;
 }

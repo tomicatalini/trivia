@@ -9,10 +9,9 @@ import org.springframework.stereotype.Service;
 import com.taller.trivia.dao.GameDao;
 import com.taller.trivia.dto.GameDTO;
 import com.taller.trivia.dto.GameQuestionDTO;
-import com.taller.trivia.dto.ProgressDTO;
-import com.taller.trivia.dto.QuestionDTO;
 import com.taller.trivia.model.Game;
-import com.taller.trivia.model.GameQuestionId;
+import com.taller.trivia.model.GameQuestion;
+import com.taller.trivia.model.Question;
 import com.taller.trivia.model.Quiz;
 import com.taller.trivia.model.User;
 import com.taller.trivia.service.GameService;
@@ -35,7 +34,7 @@ public class GameServiceImpl implements GameService {
     private GameDao gameDao;
 
     @Override
-    public void createGame(Long quizId, Long userId, Long categoryId, int numberOfQuestions) {
+    public void createGame(Long quizId, Long userId, Long categoryId, String level, int numberOfQuestions) {
         if (quizId == null || userId == null) {
             throw new IllegalArgumentException("El ID del cuestionario y el ID del jugador no pueden ser nulos.");
         }
@@ -54,13 +53,12 @@ public class GameServiceImpl implements GameService {
         game.setEndDate(null);
         game.setScore(0L);
         game.setGameQuestions(null);
-        this.gameDao.save(game);
+        game = this.gameDao.save(game);
         
-        List<GameQuestionDTO> questions = this.questionService.getRandomQuestions(quizId, categoryId, game.getId(), numberOfQuestions);
-        game.setGameQuestions(questions.stream()
-                .map(DTOMapper::toGameQuestionEntity)
-                .toList());
+        List<GameQuestionDTO> questions = this.questionService.getRandomQuestions(quizId, categoryId, game.getId(), level, numberOfQuestions);
+        this.saveGameQuestions(categoryId, questions);
     }
+
     @Override
     public GameDTO getGameById(Long gameId) {
         if (gameId == null) {
@@ -82,41 +80,76 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public void getAllGamesByPlayerId(Long playerId) {
-        // TODO: Implementar lógica para obtener todos los juegos de un jugador por su ID
-        // Ejemplo: Buscar en la base de datos o en un repositorio
-        throw new UnsupportedOperationException("Método no implementado");
+    public List<GameDTO> getAllGamesByPlayerId(Long playerId) {
+        if (playerId == null) {
+            throw new IllegalArgumentException("El ID del jugador no puede ser nulo.");
+        }
+
+        List<Game> games = gameDao.findAllUserGames(playerId);
+
+        if (games == null || games.isEmpty()) {
+            throw new IllegalArgumentException("No se encontraron juegos para el jugador con ID: " + playerId);
+        }
+
+        // Convertir a DTOs y devolver la lista de juegos
+        return games.stream()
+                .map(DTOMapper::toGameDTO)
+                .toList();
+
     } 
 
     @Override
-    public void endGame(Long gameId) {
+    public void endGame(Long gameId, Date endDate, List<GameQuestionDTO> gamesQuestions) {
         // TODO: Implementar lógica para finalizar el juego
-        this.getGameById(gameId);
+        Game game = DTOMapper.toGameEntity(this.getGameById(gameId));
+
+        if (game == null) {
+            throw new IllegalArgumentException("Juego no encontrado con ID: " + gameId);
+        }
+
+        game.setEndDate(endDate);
+
+        this.saveGameQuestions(gameId, gamesQuestions);
+        this.calculateScore(gameId);
     }
 
     @Override
-    public void saveGameProgress(Long gameId, Long playerId, ProgressDTO progress) {
-        // TODO: Implementar lógica para guardar el progreso del juego
-    }
-
-    public Long calculateScore(Long correctAnswers, Long totalQuestions, Long difficultyFactor, Long timeFactor) {
-        if (totalQuestions == 0) {
-            throw new IllegalArgumentException("El total de preguntas no puede ser 0.");
-        }
-        // Calculo de puntaje
-        // Puntaje = (Respuesta correcta / Total de preguntas) * factor de dificultad * factor tiempo
-        // Factor de dificultad: 1 punto para fácil, 3 puntos para medio, 5 puntos para difícil
-        // Factor de tiempo: 5 puntos <= 5 segundos, 3 puntos 5 < x <= 20 segundos, 1 punto x > 20 segundos
-        return (correctAnswers * difficultyFactor * timeFactor) / totalQuestions;
-    }
-
-    public Long calculateQuestionDifficultyFactor(GameQuestionId gameQuestionId) {
-        QuestionDTO question = this.questionService.getById(gameQuestionId.getQuestionId()).orElse(null);
-
-        if (question == null) {
-            throw new IllegalArgumentException("Pregunta no válida: " + gameQuestionId.getQuestionId());
+    public void saveGameQuestions(Long gameId, List<GameQuestionDTO> gameQuestions) {
+        if (gameId == null || gameQuestions == null || gameQuestions.isEmpty()) {
+            throw new IllegalArgumentException("El ID del juego y la lista de preguntas no pueden ser nulos o vacíos.");
         }
 
+        Game game = this.gameDao.findById(gameId).orElse(null);
+
+        if (game == null) {
+            throw new IllegalArgumentException("Juego no encontrado con ID: " + gameId);
+        }
+
+        game.setGameQuestions(gameQuestions.stream()
+                .map(DTOMapper::toGameQuestionEntity)
+                .toList());
+
+        this.gameDao.save(game);
+    }
+
+
+    public Long calculateScore(Long gameId) {
+        Game game = this.gameDao.findById(gameId).orElse(null);
+        Long score = 0L;
+        int totalQuestions = game.getGameQuestions().size();
+
+        for (GameQuestion gameQuestion : game.getGameQuestions()) {    
+            Long difficultyFactor = this.calculateQuestionDifficultyFactor(gameQuestion.getQuestion());
+            Long timeFactor = this.calculateTimeFactor(gameQuestion.getStart(), gameQuestion.getFinish());
+            score += this.calculateScore(totalQuestions, gameQuestion.isValid(), difficultyFactor, timeFactor);
+        }
+        score = score / totalQuestions;
+        game.setScore(score);
+        this.gameDao.save(game);
+        return score;
+    }
+
+    public Long calculateQuestionDifficultyFactor(Question question) {
         String difficulty = question.getLevel().toString().toLowerCase();
         // Factor de dificultad: 1 punto para fácil, 3 puntos para medio, 5 puntos para difícil
         switch (difficulty) {
@@ -129,5 +162,32 @@ public class GameServiceImpl implements GameService {
             default:
                 throw new IllegalArgumentException("Dificultad no válida: " + difficulty);
         }
+    }
+
+    public Long calculateTimeFactor(Date start, Date finish) {
+        if (start == null || finish == null) {
+            throw new IllegalArgumentException("La fecha de inicio y la fecha de finalización no pueden ser nulas.");
+        }
+
+        Long timeTaken = (finish.getTime() - start.getTime()) / 1000; // Tiempo en segundos
+
+        // Factor de tiempo: 5 puntos <= 5 segundos, 3 puntos 5 < x <= 20 segundos, 1 punto x > 20 segundos
+        if (timeTaken <= 5) {
+            return 5L;
+        } else if (timeTaken <= 20) {
+            return 3L;
+        } else {
+            return 1L;
+        }
+    }
+
+    public Long calculateScore(int totalQuestions, boolean correctAnswers, Long difficultyFactor, Long timeFactor) {
+        int valid = 0;
+
+        if (correctAnswers == true) {
+            valid = 1;
+        }
+
+        return valid * difficultyFactor * timeFactor;
     }
 }
