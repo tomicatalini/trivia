@@ -6,11 +6,16 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.taller.trivia.dao.QuizDao;
 import com.taller.trivia.dto.QuizDTO;
+import com.taller.trivia.exception.BusinessException;
+import com.taller.trivia.exception.ServiceException;
 import com.taller.trivia.model.Quiz;
 import com.taller.trivia.service.QuizService;
+import com.taller.trivia.util.DTOMapper;
+import com.taller.trivia.util.ErrorMessageLoader;
 
 @Service
 public class QuizServiceImpl implements QuizService {
@@ -20,56 +25,53 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public List<QuizDTO> getAll() {
-        return repository.findAll().stream()
-                         .map(this::quizToDTO)
-                         .collect(Collectors.toList());
+        try {
+            return repository.findAll().stream()
+                             .map(DTOMapper::toQuizDTO)
+                             .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }
     }
 
     @Override
     public Optional<QuizDTO> getById(Long id) {
-        return repository.findById(id)
-                         .map(this::quizToDTO);
+        try {
+            return repository.findById(id)
+                             .map(DTOMapper::toQuizDTO);
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }
     }
 
+    @Transactional
     @Override
     public QuizDTO save(QuizDTO quizDto) {
-        
-        if (quizDto == null) {
-            throw new IllegalArgumentException("El objeto quizDto no puede ser nulo");
+        try {
+            if (quizDto == null || quizDto.getName() == null || quizDto.getUrl() == null) {
+                throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED_MULT", "nombre, url"));
+            }
+            Quiz quiz = DTOMapper.toQuizEntity(quizDto);
+            quiz = repository.save(quiz);
+            return DTOMapper.toQuizDTO(quiz);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         }
-        
-        if (quizDto.getName() == null || quizDto.getUrl() == null) {
-            throw new IllegalArgumentException("Los campos 'name', 'email' y 'password' son obligatorios");
-        }
-
-        Quiz quiz = this.DTOToQuiz(quizDto);
-
-        quiz = repository.save(quiz);
-        return this.quizToDTO(quiz);
     }
 
+    @Transactional
     @Override
-    public void delete(Long id) {
-        repository.delete(id);
+    public boolean delete(Long id) {
+        try {
+            if (!repository.delete(id)) {
+                throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+            }
+            return true;
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }
     }
 
-
-    //Metodos de soporte
-    public QuizDTO quizToDTO(Quiz quiz) {
-        QuizDTO quizDTO = new QuizDTO();
-        
-        quizDTO.setName(quiz.getName());
-        quizDTO.setUrl(quiz.getUrl());
-        
-        return quizDTO;
-    }
-
-    public Quiz DTOToQuiz(QuizDTO quizDTO) {
-        Quiz user = new Quiz();
-        
-        user.setName(quizDTO.getName());
-        user.setUrl(quizDTO.getUrl());
-        
-        return user;
-    }
 }

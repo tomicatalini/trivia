@@ -13,6 +13,6 @@ public interface QuizService {
     List<QuizDTO> getAll();
     Optional<QuizDTO> getById(Long id);
     QuizDTO save(QuizDTO quizDTO);
-    void delete(Long id);
+    boolean delete(Long id);
     
 }

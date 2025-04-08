@@ -16,6 +16,7 @@ import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.exception.ServiceException;
 import com.taller.trivia.model.User;
 import com.taller.trivia.service.UserService;
+import com.taller.trivia.util.DTOMapper;
 import com.taller.trivia.util.ErrorMessageLoader;
 
 @Transactional
@@ -32,7 +33,7 @@ public class UserServiceImpl implements UserService {
     public List<UserDTO> getAll() {
         try {
             return repository.findAll().stream()
-                             .map(this::userToDTO)
+                             .map(DTOMapper::toUserDTO)
                              .collect(Collectors.toList());
         } catch (Exception e) {
             throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
@@ -43,7 +44,7 @@ public class UserServiceImpl implements UserService {
     public Optional<UserDTO> getById(Long id) {
         try {
             return repository.findById(id)
-                             .map(this::userToDTO);
+                             .map(DTOMapper::toUserDTO);
         } catch (Exception e) {
             throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         }
@@ -54,7 +55,7 @@ public class UserServiceImpl implements UserService {
         try {
             return repository.findByName(name)
                              .stream()
-                             .map(this::userToDTO)
+                             .map(DTOMapper::toUserDTO)
                              .collect(Collectors.toList());
         } catch (DatabaseException e) {
             throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
@@ -68,7 +69,7 @@ public class UserServiceImpl implements UserService {
         try {
             return repository.findByEmail(mail)
                              .stream()
-                             .map(this::userToDTO)
+                             .map(DTOMapper::toUserDTO)
                              .collect(Collectors.toList());
         } catch (Exception e) {
             throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
@@ -82,11 +83,11 @@ public class UserServiceImpl implements UserService {
             if (userDto == null || userDto.getName() == null || userDto.getEmail() == null) {
                 throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED_MULT", "nombre, email"));
             }
-            User user = this.DTOToUser(userDto);
+            User user = DTOMapper.toUserEntity(userDto);
             String encodedPass = passwordEncoder.encode(password);
             user.setPassword(encodedPass);
             user = repository.save(user);
-            return this.userToDTO(user);
+            return DTOMapper.toUserDTO(user);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -98,8 +99,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO update(Long userId, UserDTO userDto) {
         try {
-            User user = this.repository.update(userId, this.DTOToUser(userDto));
-            return this.userToDTO(user);
+            User user = this.repository.update(userId, DTOMapper.toUserEntity(userDto));
+            return DTOMapper.toUserDTO(user);
         } catch (Exception e) {
             throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         }
@@ -175,23 +176,4 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    // Métodos de soporte
-    public UserDTO userToDTO(User user) {
-        UserDTO userDto = new UserDTO();
-        userDto.setId(user.getId());
-        userDto.setName(user.getName());
-        userDto.setEmail(user.getEmail());
-        userDto.setRol(user.getRol());
-        return userDto;
-    }
-
-    public User DTOToUser(UserDTO userDto) {
-        User user = new User();
-        user.setId(user.getId());
-        user.setName(userDto.getName());
-        user.setEmail(userDto.getEmail());
-        user.setRol(userDto.getRol());
-        user.setPassword(userDto.getPassword());
-        return user;
-    }
 }

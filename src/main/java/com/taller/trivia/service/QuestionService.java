@@ -9,7 +9,7 @@ import com.taller.trivia.dto.QuestionDTO;
 public interface QuestionService {
 
     QuestionDTO save(QuestionDTO quizDTO);
-    void delete(Long id);
+    boolean delete(Long id);
     Optional<QuestionDTO> getById(Long id);
     List<QuestionDTO> getAll();
     List<QuestionDTO> getByCategory(Long id);
