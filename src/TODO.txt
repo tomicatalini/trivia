@@ -4,3 +4,14 @@ TODO List:
 - Revisar excepeciones
 - Armar controladores
 - Actualizar diagrama de clases
+- Analizar la forma de obtener las preguntas desde la API (https://opentdb.com/api_config.php)
+    - Es necesario enviar varios parametros, obligatorio el amount. Por lo que se va a tener que hacer un bucle
+    con las categorias y la cantidad total que tienen las categorias para poder obtener todas las preguntas de
+    la API:
+    - API Categorias: https://opentdb.com/api_category.php
+    - API Cantidad preguntas por categoria: https://opentdb.com/api_count.php?category=CATEGORY_ID_HERE
+    - API Total de preguntas de todas las categorias: https://opentdb.com/api_count_global.php
+    - AGREGAR EL TOKEN en cada petición, esto permite que dentro de las proximas 6 horas la API no te devuelve las mismas preguntas, 
+    una vez se vence el token se pueden volver a repetir: 
+        - NUEVO TOKEN: https://opentdb.com/api_token.php?command=request
+        - RESET TOKEN: https://opentdb.com/api_token.php?command=reset&token=YOURTOKENHERE
