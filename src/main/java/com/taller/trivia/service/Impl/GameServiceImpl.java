@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.taller.trivia.dao.GameDao;
@@ -24,6 +25,7 @@ import com.taller.trivia.util.DTOMapper;
 public class GameServiceImpl implements GameService {
 
     @Autowired
+    @Lazy
     private QuestionService questionService;
     @Autowired
     private QuizService quizService;

@@ -5,12 +5,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.taller.trivia.dao.QuizDao;
 import com.taller.trivia.dto.QuizDTO;
 import com.taller.trivia.model.Quiz;
 import com.taller.trivia.service.QuizService;
 
+@Service
 public class QuizServiceImpl implements QuizService {
 
     @Autowired

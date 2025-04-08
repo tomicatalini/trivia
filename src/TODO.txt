@@ -1,0 +1,6 @@
+TODO List:
+
+- Generar funcionalidad para obtener y cargar la base de datos desde la API 
+- Revisar excepeciones
+- Armar controladores
+- Actualizar diagrama de clases
