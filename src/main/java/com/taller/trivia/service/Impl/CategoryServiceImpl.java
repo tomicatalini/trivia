@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.taller.trivia.model.Category;
 import com.taller.trivia.dao.CategoryDao;
@@ -11,6 +12,7 @@ import com.taller.trivia.dto.CategoryDTO;
 import com.taller.trivia.service.CategoryService;
 import com.taller.trivia.util.DTOMapper;
 
+@Service
 public class CategoryServiceImpl implements CategoryService {
     
     @Autowired 

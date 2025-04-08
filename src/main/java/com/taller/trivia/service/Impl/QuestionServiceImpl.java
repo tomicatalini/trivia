@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.taller.trivia.service.GameService;
 import com.taller.trivia.service.QuestionService;
@@ -15,6 +16,7 @@ import com.taller.trivia.dto.GameQuestionDTO;
 import com.taller.trivia.dto.QuestionDTO;
 import com.taller.trivia.model.Question;
 
+@Service
 public class QuestionServiceImpl implements QuestionService{
 
     @Autowired
