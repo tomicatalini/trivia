@@ -5,12 +5,14 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import com.taller.trivia.model.Category;
 import com.taller.trivia.dao.CategoryDao;
 import com.taller.trivia.dto.CategoryDTO;
+import com.taller.trivia.exception.BusinessException;
+import com.taller.trivia.exception.ServiceException;
+import com.taller.trivia.model.Category;
 import com.taller.trivia.service.CategoryService;
 import com.taller.trivia.util.DTOMapper;
+import com.taller.trivia.util.ErrorMessageLoader;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
@@ -20,18 +22,20 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDTO save(CategoryDTO categoryDto) {
-        if (categoryDto == null) {
-            throw new IllegalArgumentException("El objeto categoryDto no puede ser nulo");
+        
+        try {
+            if (categoryDto == null || categoryDto.getTitle() == null || categoryDto.getDescription() == null) {
+                throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED_MULT", "titulo, descripcion"));
+            }
+            Category category = DTOMapper.toCategoryEntity(categoryDto);
+            category = repository.save(category);
+            return DTOMapper.toCategoryDTO(category);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         }
 
-        if (categoryDto.getTitle() == null) {
-            throw new IllegalArgumentException("El campo 'name' es obligatorio");
-        }
-
-        Category category = DTOMapper.toCategoryEntity(categoryDto);
-
-        category = repository.save(category);
-        return DTOMapper.toCategoryDTO(category);
     }
 
     @Override
@@ -58,16 +62,26 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryDTO> getAllCategories() {
-        return repository.findAll().stream()
-                         .map(DTOMapper::toCategoryDTO)
-                         .collect(Collectors.toList());
+        try {
+            return repository.findAll().stream()
+                             .map(DTOMapper::toCategoryDTO)
+                             .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }
+
     }
 
     @Override
     public CategoryDTO getCategoryById(Long id) {
-        return repository.findById(id)
-                         .map(DTOMapper::toCategoryDTO)
-                         .orElse(null);
+        try {
+            return repository.findById(id)
+                             .map(DTOMapper::toCategoryDTO)
+                             .orElse(null);
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }
+                                 
     }
 
 }
