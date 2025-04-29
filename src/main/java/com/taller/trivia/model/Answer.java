@@ -29,6 +29,12 @@ public class Answer {
     @JoinColumn(name = "question_id")
     private Question question;
 
+    public Answer(String answer, boolean valid, Question question) {
+        this.answer = answer;
+        this.valid = valid;
+        this.question = question;
+    }
+
     public Answer(Long id, String answer, boolean valid) {
         this.id = id;
         this.answer = answer;

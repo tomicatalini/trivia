@@ -38,6 +38,12 @@ public class Category {
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions;
 
+    public Category(String title, String description, boolean enable) {
+        this.title = title;
+        this.description = description;
+        this.enable = enable;
+    }
+
     public Category(Long id, String title, String description, boolean enable) {
         this.id = id;
         this.title = title;
