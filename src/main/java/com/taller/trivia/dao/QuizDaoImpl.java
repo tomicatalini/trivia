@@ -15,6 +15,8 @@ import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.model.Quiz;
 import com.taller.trivia.util.ErrorMessageLoader;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
@@ -22,18 +24,21 @@ import jakarta.persistence.criteria.Root;
 @Repository
 public class QuizDaoImpl implements QuizDao {
 
-    @Autowired
-    private SessionFactory sessionFactory;
+    @PersistenceContext
+    private EntityManager entityManager;
 
         // Método para manejar errores de métodos que devuelven un valor
     private <T> T executeQuery(Supplier<T> function) {
         try {
             return function.get();
         } catch (SessionException e) {
+            System.out.println("SessionException: " + e.getMessage());
             throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_CONNECTION_ERROR"));
         } catch (HibernateException e) {
+            System.out.println("SessionException: " + e.getMessage());
             throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         } catch (Exception e) {
+            System.out.println("SessionException: " + e.getMessage());
             throw new RuntimeException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
         }
     }
@@ -41,39 +46,35 @@ public class QuizDaoImpl implements QuizDao {
     @Override
     public Quiz save(Quiz quiz) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            return ctx.merge(quiz);
+            return entityManager.merge(quiz);
         });      
     }
 
     @Override
     public Quiz update(Long quizId, Quiz quiz) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            Quiz quizPersisted = ctx.get(Quiz.class, quizId);
+            Quiz quizPersisted = entityManager.find(Quiz.class, quizId);
 
             if (quizPersisted == null) {
                 throw new DatabaseException(ErrorMessageLoader.getMessage("QUIZ_NOT_FOUND", quizId));
             }
-
             
             quizPersisted.setName(quiz.getName());
             quizPersisted.setUrl(quiz.getUrl());
 
-            return ctx.merge(quizPersisted);            
+            return entityManager.merge(quizPersisted);            
         });
     }
 
     @Override
     public boolean delete(Long id) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            Quiz quiz = ctx.get(Quiz.class, id);
+            Quiz quiz = entityManager.find(Quiz.class, id);
 
             if (quiz != null) {
-                ctx.remove(quiz);
+                entityManager.remove(quiz);
             }
-            
+
             return false;
         });        
     }
@@ -81,21 +82,19 @@ public class QuizDaoImpl implements QuizDao {
     @Override
     public Optional<Quiz> findById(Long id) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            return Optional.ofNullable(ctx.get(Quiz.class, id));
+            return Optional.ofNullable(entityManager.find(Quiz.class, id));
         });        
     }
 
     @Override
     public List<Quiz> findAll() {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<Quiz> criteriaQuery = criteriaBuilder.createQuery(Quiz.class);
             Root<Quiz> root = criteriaQuery.from(Quiz.class);
             criteriaQuery.select(root);
 
-            return ctx.createQuery(criteriaQuery).getResultList();
+            return entityManager.createQuery(criteriaQuery).getResultList();
         });
     }
 

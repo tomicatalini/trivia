@@ -53,14 +53,26 @@ public class TriviaImportServiceImpl implements TriviaImportService {
 
     @Override
     public void importTriviaData(Long quizId) {
+        System.out.println("Importando datos de trivia...");
+        System.out.println("Token: " + token);
+        System.out.println("Quiz ID: " + quizId);
+        System.out.println(this.questionDao == null ? "questionDao es null" : "questionDao no es null");
+        System.out.println(this.categoryDao == null ? "categoryDao es null" : "categoryDao no es null");
+        System.out.println(this.answerDao == null ? "answerDao es null" : "answerDao no es null");
+        System.out.println(this.quizDao == null ? "quizDao es null" : "quizDao no es null");
+        System.out.println(this.webClient == null ? "webClient es null" : "webClient no es null");
+        
         OpenTriviaCategoryResponseDTO categoryResponse = webClient.get()
             .uri("/api_category.php")
             .retrieve()
             .bodyToMono(OpenTriviaCategoryResponseDTO.class)
             .block();
 
+        System.out.println("Cantidad de categorías obtenidas: " + categoryResponse.getTrivia_categories().size());
+
         if (categoryResponse != null && categoryResponse.getTrivia_categories() != null) {
             for (OpenTriviaCategoryDTO categoryDTO : categoryResponse.getTrivia_categories()) {
+                System.out.println("Importando categoría: " + categoryDTO.getName() + " con ID: " + categoryDTO.getId());
                 importQuestionsForCategory(quizId, categoryDTO);
             }
         } else {
@@ -73,20 +85,31 @@ public class TriviaImportServiceImpl implements TriviaImportService {
         int currentAmount = -1;
         Quiz quiz = quizDao.findById(quizId).orElse(null);
 
+        System.out.println("Quiz: " + quiz);
+        if (quiz == null) {
+            System.out.println("No se encontró el quiz con ID: " + quizId);
+            return;
+        }
+
         while (currentAmount == -1 || currentAmount > 0) {
             String url = String.format("/api.php?amount=%d&category=%d&type=multiple&token=%s",
                 limitAmount, categoryDTO.getId(), token);
+
+            System.out.println("URL: " + url);
 
             OpenTriviaResponseDTO response = webClient.get()
                     .uri(url)
                     .retrieve()
                     .bodyToMono(OpenTriviaResponseDTO.class)
-                    .delayElement(Duration.ofSeconds(6l))
+                    .delayElement(Duration.ofSeconds(6L))
                     .block();        
+
+            System.out.println("Response: " + response.getResponse_code());
 
             if (response != null) {
                 currentAmount = response.getResults().size();
-
+                System.out.println("Cantidad de preguntas obtenidas: " + currentAmount);
+                
                 if (response.getResponse_code() == 4) {
                     this.token = resetToken();
                     importQuestionsForCategory(quizId, categoryDTO);
