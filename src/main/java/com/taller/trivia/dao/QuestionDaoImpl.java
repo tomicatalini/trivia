@@ -16,6 +16,7 @@ import com.taller.trivia.model.Question;
 import com.taller.trivia.util.ErrorMessageLoader;
 import com.taller.trivia.model.Level; // Import the Level enum
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
@@ -25,7 +26,7 @@ import jakarta.persistence.criteria.Root;
 public class QuestionDaoImpl implements QuestionDao {
         
     @Autowired
-    private SessionFactory sessionFactory;
+    private EntityManager entityManager;
 
     // Método para manejar errores de métodos que devuelven un valor
     private <T> T executeQuery(Supplier<T> function) {
@@ -43,19 +44,17 @@ public class QuestionDaoImpl implements QuestionDao {
     @Override
     public Question save(Question question) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            return ctx.merge(question);
+            return entityManager.merge(question);
         });        
     }
 
     @Override
     public boolean delete(Long id) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            Question question = ctx.get(Question.class, id);
+            Question question = entityManager.find(Question.class, id);
 
             if (question != null) {
-                ctx.remove(question);
+                entityManager.remove(question);
                 return true;
             }
             
@@ -66,31 +65,28 @@ public class QuestionDaoImpl implements QuestionDao {
     @Override
     public Optional<Question> findById(Long id) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            return Optional.ofNullable(ctx.get(Question.class, id));
+            return Optional.ofNullable(entityManager.find(Question.class, id));
         });        
     }
 
     @Override
     public List<Question> findAll() {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<Question> criteriaQuery = criteriaBuilder.createQuery(Question.class);
             Root<Question> root = criteriaQuery.from(Question.class);
 
             //root.fetch("answers", JoinType.LEFT);
             criteriaQuery.select(root);
 
-            return ctx.createQuery(criteriaQuery).getResultList();
+            return entityManager.createQuery(criteriaQuery).getResultList();
         });        
     }
 
     @Override
     public List<Question> findAllByCategory(Long id) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<Question> criteriaQuery = criteriaBuilder.createQuery(Question.class);
             Root<Question> root = criteriaQuery.from(Question.class);
 
@@ -98,15 +94,14 @@ public class QuestionDaoImpl implements QuestionDao {
             Predicate categoryPredicate = criteriaBuilder.equal(root.get("category").get("id"), id);
             criteriaQuery.select(root).where(categoryPredicate);
 
-            return ctx.createQuery(criteriaQuery).getResultList();
+            return entityManager.createQuery(criteriaQuery).getResultList();
         });        
     }
 
     @Override
     public List<Question> findAllQuestionsGame(Long gameId) {
         return executeQuery(() -> {
-            Session ctx = sessionFactory.getCurrentSession();
-            CriteriaBuilder criteriaBuilder = ctx.getCriteriaBuilder();
+            CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<Question> criteriaQuery = criteriaBuilder.createQuery(Question.class);
             Root<Question> root = criteriaQuery.from(Question.class);
 
@@ -114,7 +109,7 @@ public class QuestionDaoImpl implements QuestionDao {
             Predicate gamePredicate = criteriaBuilder.isMember(gameId, root.get("games"));
             criteriaQuery.select(root).where(gamePredicate);
 
-            return ctx.createQuery(criteriaQuery).getResultList();
+            return entityManager.createQuery(criteriaQuery).getResultList();
         });
     };
 
@@ -126,8 +121,7 @@ public class QuestionDaoImpl implements QuestionDao {
                      "ORDER BY RAND() LIMIT :limit";
 
             return executeQuery(() -> {
-                Session ctx = sessionFactory.getCurrentSession();
-                return ctx.createNativeQuery(sql, Question.class)
+                return entityManager.createNativeQuery(sql, Question.class)
                         .setParameter("categoryId", categoryId)
                         .setParameter("quizId", quizId)
                         .setParameter("limit", limit)
@@ -139,8 +133,7 @@ public class QuestionDaoImpl implements QuestionDao {
                      "ORDER BY RAND() LIMIT :limit";
 
             return executeQuery(() -> {
-                Session ctx = sessionFactory.getCurrentSession();
-                return ctx.createNativeQuery(sql, Question.class)
+                return entityManager.createNativeQuery(sql, Question.class)
                         .setParameter("categoryId", categoryId)
                         .setParameter("quizId", quizId)
                         .setParameter("levelValue", Level.valueOf(level_String))

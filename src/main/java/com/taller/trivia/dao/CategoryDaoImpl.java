@@ -62,6 +62,20 @@ public class CategoryDaoImpl implements CategoryDao {
     }
 
     @Override
+    public Optional<Category> findByTitle(String title) {
+        return executeQuery(() -> {
+            try {
+                Category category = entityManager.createQuery("SELECT c FROM Category c WHERE c.title = :title", Category.class)
+                        .setParameter("title", title)
+                        .getSingleResult();
+                return Optional.ofNullable(category);
+            } catch (jakarta.persistence.NoResultException e) {
+                return Optional.empty();
+            }
+        });
+    }
+
+    @Override
     public List<Category> findAll() {
         return executeQuery(() -> {
             CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();

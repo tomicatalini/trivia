@@ -14,6 +14,7 @@ import com.taller.trivia.dao.AnswerDao;
 import com.taller.trivia.dao.CategoryDao;
 import com.taller.trivia.dao.QuestionDao;
 import com.taller.trivia.dao.QuizDao;
+import com.taller.trivia.dto.OpenTriviaCategoryCountResponseDTO;
 import com.taller.trivia.dto.OpenTriviaCategoryDTO;
 import com.taller.trivia.dto.OpenTriviaCategoryResponseDTO;
 import com.taller.trivia.dto.OpenTriviaQuestionDTO;
@@ -54,14 +55,17 @@ public class TriviaImportServiceImpl implements TriviaImportService {
     @Override
     public void importTriviaData(Long quizId) {
         System.out.println("Importando datos de trivia...");
-        System.out.println("Token: " + token);
-        System.out.println("Quiz ID: " + quizId);
-        System.out.println(this.questionDao == null ? "questionDao es null" : "questionDao no es null");
-        System.out.println(this.categoryDao == null ? "categoryDao es null" : "categoryDao no es null");
-        System.out.println(this.answerDao == null ? "answerDao es null" : "answerDao no es null");
-        System.out.println(this.quizDao == null ? "quizDao es null" : "quizDao no es null");
-        System.out.println(this.webClient == null ? "webClient es null" : "webClient no es null");
+        System.out.println("token: " + token);
         
+        System.out.println("Obtenemos QUIZ...");
+        Quiz quiz = quizDao.findById(quizId).orElse(null);
+        
+        if(quiz == null) {
+            System.out.println("No se encontró el quiz con ID: " + quiz.getId());
+            throw new RuntimeException("Quiz not found");
+        }
+        
+        System.out.println("Obtenemos CATEGORÍAS...");
         OpenTriviaCategoryResponseDTO categoryResponse = webClient.get()
             .uri("/api_category.php")
             .retrieve()
@@ -72,28 +76,34 @@ public class TriviaImportServiceImpl implements TriviaImportService {
 
         if (categoryResponse != null && categoryResponse.getTrivia_categories() != null) {
             for (OpenTriviaCategoryDTO categoryDTO : categoryResponse.getTrivia_categories()) {
-                System.out.println("Importando categoría: " + categoryDTO.getName() + " con ID: " + categoryDTO.getId());
-                importQuestionsForCategory(quizId, categoryDTO);
+
+                System.out.println("Obtengo CATEGORIA con ID: " + categoryDTO.getId() + " y nombre: " + categoryDTO.getName());
+                Category category = categoryDao.findByTitle(categoryDTO.getName()).orElse(null);
+                        
+                if (category == null) {
+                    Category newCategory = new Category((long) categoryDTO.getId(),categoryDTO.getName(),categoryDTO.getName(),true);
+                    categoryDao.save(newCategory);
+                    category = newCategory;
+                }
+
+                System.out.println("Obtengo cantidad de preguntas en la categoría: " + categoryDTO.getName() + " con ID: " + categoryDTO.getId());
+                
+                int totalQuestions = getQuestionCount(categoryDTO.getId());
+                System.out.println("Cantidad de preguntas en la categoría: " + totalQuestions);
+
+                importQuestionsForCategory(totalQuestions, category, quiz);
             }
         } else {
             System.out.println("No se pudieron obtener categorías desde la API.");
         }
     }
 
-    private void importQuestionsForCategory(Long quizId, OpenTriviaCategoryDTO categoryDTO) {
+    private void importQuestionsForCategory(int amount, Category category, Quiz quiz) {
         int limitAmount = 50;
-        int currentAmount = -1;
-        Quiz quiz = quizDao.findById(quizId).orElse(null);
 
-        System.out.println("Quiz: " + quiz);
-        if (quiz == null) {
-            System.out.println("No se encontró el quiz con ID: " + quizId);
-            return;
-        }
-
-        while (currentAmount == -1 || currentAmount > 0) {
+        while (amount > 0) {
             String url = String.format("/api.php?amount=%d&category=%d&type=multiple&token=%s",
-                limitAmount, categoryDTO.getId(), token);
+                limitAmount, category.getId(), token);
 
             System.out.println("URL: " + url);
 
@@ -107,24 +117,15 @@ public class TriviaImportServiceImpl implements TriviaImportService {
             System.out.println("Response: " + response.getResponse_code());
 
             if (response != null) {
-                currentAmount = response.getResults().size();
-                System.out.println("Cantidad de preguntas obtenidas: " + currentAmount);
                 
                 if (response.getResponse_code() == 4) {
                     this.token = resetToken();
-                    importQuestionsForCategory(quizId, categoryDTO);
+                    importQuestionsForCategory(amount, category, quiz);
                     return;
                 } else if (response.getResponse_code() == 0) {
-                    Category category = categoryDao.findById((long) categoryDTO.getId()).orElse(null);
-                        
-                    if (category == null) {
-                        Category newCategory = new Category(categoryDTO.getName(),categoryDTO.getName(),true);
-                        categoryDao.save(newCategory);
-                        category = newCategory;
-                    }
 
                     for (OpenTriviaQuestionDTO dto : response.getResults()) {
-                        System.out.println("Importando pregunta: " + dto.getQuestion() + " de la categoría: " + category.getTitle() + " con dificultad: " + dto.getDifficulty() + " y tipo: " + dto.getType());
+                        //System.out.println("Importando pregunta: " + dto.getQuestion() + " de la categoría: " + category.getTitle() + " con dificultad: " + dto.getDifficulty() + " y tipo: " + dto.getType());
                         Question question = new Question();
                         question.setQuestion(dto.getQuestion());
                         question.setCategory(category);
@@ -145,13 +146,26 @@ public class TriviaImportServiceImpl implements TriviaImportService {
                         }
                         
                         question.setAnswers(answers);
-                        //questionDao.save(question);
+                        questionDao.save(question);
                     }
                 }
-            } else {
-                currentAmount = 0;
             }
+
+            amount -= limitAmount;
+            System.out.println("Preguntas restantes: " + amount);
         }
+    }
+
+    private int getQuestionCount(int categoryId) {
+        String url = "https://opentdb.com/api_count.php?category=" + categoryId;
+
+        return webClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(OpenTriviaCategoryCountResponseDTO.class)
+                .block()
+                .getCategory_question_count()
+                .getTotal_question_count();
     }
 
     private String fetchToken() {
