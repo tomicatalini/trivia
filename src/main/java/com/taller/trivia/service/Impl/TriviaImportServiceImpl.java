@@ -1,6 +1,7 @@
 
 package com.taller.trivia.service.Impl;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -80,6 +81,7 @@ public class TriviaImportServiceImpl implements TriviaImportService {
                     .uri(url)
                     .retrieve()
                     .bodyToMono(OpenTriviaResponseDTO.class)
+                    .delayElement(Duration.ofSeconds(6l))
                     .block();        
 
             if (response != null) {
@@ -99,7 +101,7 @@ public class TriviaImportServiceImpl implements TriviaImportService {
                     }
 
                     for (OpenTriviaQuestionDTO dto : response.getResults()) {
-
+                        System.out.println("Importando pregunta: " + dto.getQuestion() + " de la categoría: " + category.getTitle() + " con dificultad: " + dto.getDifficulty() + " y tipo: " + dto.getType());
                         Question question = new Question();
                         question.setQuestion(dto.getQuestion());
                         question.setCategory(category);
@@ -107,16 +109,20 @@ public class TriviaImportServiceImpl implements TriviaImportService {
                         question.setType(dto.getType());
                         question.setQuiz(quiz);
 
-                        questionDao.save(question);
+                        List<Answer> answers = new ArrayList<>();
 
                         Answer correct = new Answer(dto.getCorrect_answer(), true, question);
-                        answerDao.save(correct);
+                        //answerDao.save(correct);
+                        answers.add(correct);
 
                         for (String wrong : dto.getIncorrect_answers()) {
                             Answer incorrect = new Answer(wrong, false, question);
-                            answerDao.save(incorrect);
+                            //answerDao.save(incorrect);
+                            answers.add(incorrect);
                         }
                         
+                        question.setAnswers(answers);
+                        //questionDao.save(question);
                     }
                 }
             } else {
