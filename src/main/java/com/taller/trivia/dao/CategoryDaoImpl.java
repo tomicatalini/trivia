@@ -19,7 +19,7 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
 @Repository
-@Transactional // Asegura que todos los métodos de esta clase estén dentro de una transacción
+@Transactional
 public class CategoryDaoImpl implements CategoryDao {
 
     @PersistenceContext

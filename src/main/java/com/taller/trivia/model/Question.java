@@ -3,6 +3,7 @@ package com.taller.trivia.model;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,7 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,7 +22,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "Question")
+@AllArgsConstructor
 public class Question {
 
     @Id
@@ -31,7 +32,8 @@ public class Question {
     private String question;
     private String type;
 
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING) // Mapea el enum como un String en la base de datos
+    @Column(name = "level", nullable = false, length = 10) // Ajusta 'length' según el tamaño máximo de los valores del enum
     private Level level;
 
     @ManyToOne

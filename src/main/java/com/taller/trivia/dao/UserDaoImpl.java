@@ -7,6 +7,8 @@ import java.util.function.Supplier;
 import org.hibernate.HibernateException;
 import org.hibernate.SessionException;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.model.User;
 import com.taller.trivia.util.ErrorMessageLoader;
@@ -18,6 +20,7 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
 @Repository
+@Transactional
 public class UserDaoImpl implements UserDao {
 
     @PersistenceContext
@@ -29,9 +32,11 @@ public class UserDaoImpl implements UserDao {
             return function.get();
         } catch (SessionException e) {
             System.out.println("Entro al SessionException (DAO)");
+            System.out.println(e.getMessage());
             throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_CONNECTION_ERROR"));
         } catch (HibernateException e) {
             System.out.println("Entro al HibernateException (DAO)");
+            System.out.println(e.getMessage());
             throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         } catch (Exception e) {
             System.out.println("Entro al Exception (DAO)");

@@ -5,16 +5,14 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
-import org.hibernate.Session;
 import org.hibernate.SessionException;
-import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import com.taller.trivia.exception.DatabaseException;
 import com.taller.trivia.model.Question;
 import com.taller.trivia.util.ErrorMessageLoader;
-import com.taller.trivia.model.Level; // Import the Level enum
+import com.taller.trivia.model.Level;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -33,10 +31,13 @@ public class QuestionDaoImpl implements QuestionDao {
         try {
             return function.get();
         } catch (SessionException e) {
+            System.out.println("SessionException: " + e.getMessage());
             throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_CONNECTION_ERROR"));
         } catch (HibernateException e) {
+            System.out.println("HibernateException: " + e.getMessage());
             throw new DatabaseException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
         } catch (Exception e) {
+            System.out.println("Exception: " + e.getMessage());
             throw new RuntimeException(ErrorMessageLoader.getMessage("SERVER_ERROR"));
         }
     }
@@ -121,7 +122,7 @@ public class QuestionDaoImpl implements QuestionDao {
                      "ORDER BY RAND() LIMIT :limit";
 
             return executeQuery(() -> {
-                return entityManager.createNativeQuery(sql, Question.class)
+                return  entityManager.createNativeQuery(sql, Question.class)
                         .setParameter("categoryId", categoryId)
                         .setParameter("quizId", quizId)
                         .setParameter("limit", limit)

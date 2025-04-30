@@ -1,13 +1,10 @@
-
 package com.taller.trivia.service.Impl;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.taller.trivia.dao.AnswerDao;
@@ -26,7 +23,6 @@ import com.taller.trivia.model.Level;
 import com.taller.trivia.model.Question;
 import com.taller.trivia.model.Quiz;
 import com.taller.trivia.service.TriviaImportService;
-import com.taller.trivia.util.DTOMapper;
 
 @Service
 public class TriviaImportServiceImpl implements TriviaImportService {
@@ -35,10 +31,8 @@ public class TriviaImportServiceImpl implements TriviaImportService {
     private final QuestionDao questionDao;
     private final CategoryDao categoryDao;
     private final QuizDao quizDao;
-    private final AnswerDao answerDao;
     private String token;
 
-    @Autowired
     public TriviaImportServiceImpl(QuestionDao questionDao,
                                    CategoryDao categoryDao,
                                    AnswerDao answerDao,
@@ -46,7 +40,6 @@ public class TriviaImportServiceImpl implements TriviaImportService {
                                    WebClient.Builder webClientBuilder) {
         this.questionDao = questionDao;
         this.categoryDao = categoryDao;
-        this.answerDao = answerDao;
         this.quizDao = quizDao;
         this.webClient = webClientBuilder.baseUrl("https://opentdb.com").build();
         this.token = fetchToken();
@@ -54,28 +47,22 @@ public class TriviaImportServiceImpl implements TriviaImportService {
 
     @Override
     public void importTriviaData(Long quizId) {
-        System.out.println("Importando datos de trivia...");
-        System.out.println("token: " + token);
-        
-        System.out.println("Obtenemos QUIZ...");
         Quiz quiz = quizDao.findById(quizId).orElse(null);
         
         if(quiz == null) {
             System.out.println("No se encontró el quiz con ID: " + quiz.getId());
             throw new RuntimeException("Quiz not found");
         }
-        
-        System.out.println("Obtenemos CATEGORÍAS...");
+    
         OpenTriviaCategoryResponseDTO categoryResponse = webClient.get()
             .uri("/api_category.php")
             .retrieve()
             .bodyToMono(OpenTriviaCategoryResponseDTO.class)
             .block();
 
-        System.out.println("Cantidad de categorías obtenidas: " + categoryResponse.getTrivia_categories().size());
-
         if (categoryResponse != null && categoryResponse.getTrivia_categories() != null) {
-            for (OpenTriviaCategoryDTO categoryDTO : categoryResponse.getTrivia_categories()) {
+            //for (OpenTriviaCategoryDTO categoryDTO : categoryResponse.getTrivia_categories()) {
+                OpenTriviaCategoryDTO categoryDTO = new OpenTriviaCategoryDTO(9, "General Knowledge");
 
                 System.out.println("Obtengo CATEGORIA con ID: " + categoryDTO.getId() + " y nombre: " + categoryDTO.getName());
                 Category category = categoryDao.findByTitle(categoryDTO.getName()).orElse(null);
@@ -92,67 +79,74 @@ public class TriviaImportServiceImpl implements TriviaImportService {
                 System.out.println("Cantidad de preguntas en la categoría: " + totalQuestions);
 
                 importQuestionsForCategory(totalQuestions, category, quiz);
-            }
+            //}
         } else {
             System.out.println("No se pudieron obtener categorías desde la API.");
         }
     }
 
+    @Transactional
     private void importQuestionsForCategory(int amount, Category category, Quiz quiz) {
         int limitAmount = 50;
+        int responseCode = 0;
 
-        while (amount > 0) {
-            String url = String.format("/api.php?amount=%d&category=%d&type=multiple&token=%s",
-                limitAmount, category.getId(), token);
-
-            System.out.println("URL: " + url);
+        while (responseCode == 0) {
+            String url = String.format("/api.php?amount=%d&category=%d&type=multiple&token=%s", limitAmount, category.getId(), token);
 
             OpenTriviaResponseDTO response = webClient.get()
                     .uri(url)
                     .retrieve()
                     .bodyToMono(OpenTriviaResponseDTO.class)
-                    .delayElement(Duration.ofSeconds(6L))
-                    .block();        
-
-            System.out.println("Response: " + response.getResponse_code());
-
-            if (response != null) {
-                
-                if (response.getResponse_code() == 4) {
-                    this.token = resetToken();
-                    importQuestionsForCategory(amount, category, quiz);
-                    return;
-                } else if (response.getResponse_code() == 0) {
-
-                    for (OpenTriviaQuestionDTO dto : response.getResults()) {
-                        //System.out.println("Importando pregunta: " + dto.getQuestion() + " de la categoría: " + category.getTitle() + " con dificultad: " + dto.getDifficulty() + " y tipo: " + dto.getType());
-                        Question question = new Question();
-                        question.setQuestion(dto.getQuestion());
-                        question.setCategory(category);
-                        question.setLevel(Level.valueOf(dto.getDifficulty().toUpperCase()));
-                        question.setType(dto.getType());
-                        question.setQuiz(quiz);
-
-                        List<Answer> answers = new ArrayList<>();
-
-                        Answer correct = new Answer(dto.getCorrect_answer(), true, question);
-                        //answerDao.save(correct);
-                        answers.add(correct);
-
-                        for (String wrong : dto.getIncorrect_answers()) {
-                            Answer incorrect = new Answer(wrong, false, question);
-                            //answerDao.save(incorrect);
-                            answers.add(incorrect);
-                        }
-                        
-                        question.setAnswers(answers);
-                        questionDao.save(question);
-                    }
-                }
+                    .delayElement(Duration.ofSeconds(5L))
+                    .block();
+                    
+            if (response == null) {
+                System.out.println("No se pudo obtener la respuesta de la API.");
+                throw new RuntimeException("No se pudo obtener la respuesta de la API.");
             }
 
-            amount -= limitAmount;
-            System.out.println("Preguntas restantes: " + amount);
+            responseCode = response.getResponse_code();
+
+            switch (response.getResponse_code()) {
+                case 1:
+                    System.out.println("No results: Could not return results. The API does not have enough questions for the specified parameters.");
+                    break;
+                case 2:
+                    System.out.println("Invalid parameter: The API does not have enough questions for the specified parameters.");
+                    break;
+                case 3:
+                    System.out.println("Token not found: The token provided is invalid or expired.");
+                    break;
+                case 4:
+                    System.out.println("Token empty: Session token has returned all possible questions for the specidied query");
+                    break;
+                case 5:
+                    System.out.println("Rate limit: too many requests in a short period of time. Please wait a while before trying again.");
+                    break;
+                default:
+                        for (OpenTriviaQuestionDTO dto : response.getResults()) {
+                            Question question = new Question();
+                            question.setQuestion(dto.getQuestion());
+                            question.setCategory(category);
+                            question.setLevel(Level.valueOf(dto.getDifficulty().toUpperCase()));
+                            question.setType(dto.getType());
+                            question.setQuiz(quiz);
+
+                            List<Answer> answers = new ArrayList<>();
+
+                            Answer correct = new Answer(dto.getCorrect_answer(), true, question);
+                            answers.add(correct);
+
+                            for (String wrong : dto.getIncorrect_answers()) {
+                                Answer incorrect = new Answer(wrong, false, question);
+                                answers.add(incorrect);
+                            }
+                            
+                            question.setAnswers(answers);
+                            questionDao.save(question);
+                        }
+                    break;
+            }
         }
     }
 
@@ -190,7 +184,7 @@ public class TriviaImportServiceImpl implements TriviaImportService {
             .block();
 
         return tokenResponse != null ? tokenResponse.getToken() : fetchToken();
-}
+    }
 
 }
 
