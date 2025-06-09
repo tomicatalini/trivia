@@ -3,6 +3,8 @@ package com.taller.trivia.service.Impl;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -25,7 +27,6 @@ import com.taller.trivia.model.Quiz;
 import com.taller.trivia.service.TriviaImportService;
 
 @Service
-@Transactional
 public class TriviaImportServiceImpl implements TriviaImportService {
 
     private final WebClient webClient;
@@ -47,65 +48,93 @@ public class TriviaImportServiceImpl implements TriviaImportService {
         this.token = resetToken();
     }
 
-    @Override    
+    @Override
     public void importTriviaData(Long quizId) {
-        Quiz quiz = quizDao.findById(quizId).orElse(null);
+        Optional<Quiz> quiz = quizDao.findById(quizId);
         
-        if(quiz == null) {
-            System.out.println("No se encontró el quiz con ID: " + quiz.getId());
+        if(quiz.isEmpty()) {
+            System.out.println("No se encontró el quiz con ID: " + quizId);
             throw new RuntimeException("Quiz not found");
         }
-    
+        
+        List<Category> categories = importCategories();
+
+        for (Category category : categories) {
+
+            // if (category.getId() > 10) {
+            //     return;
+            // }
+            
+            // Obtengo la cantidad de preguntas existentes para la categoría
+            int categoryQuestionCount = getCategoryQuestionCount(category.getId());
+
+            // Llama al método público transaccional
+            importQuestionsForCategory(categoryQuestionCount, category, quiz.get());
+        }
+
+    }
+
+    @Transactional
+    /**
+     * Importa las categorías desde la API de Open Trivia y las guarda en la base de datos.
+     * Si una categoría ya existe, la reutiliza.
+     *
+     * @return Lista de categorías importadas.
+     */
+    public List<Category> importCategories() {
+        List<Category> categories = new ArrayList<>();
+
+        // Obtiene las categorías desde la API de Open Trivia
         OpenTriviaCategoryResponseDTO categoryResponse = webClient.get()
             .uri("/api_category.php")
             .retrieve()
             .bodyToMono(OpenTriviaCategoryResponseDTO.class)
             .block();
 
+        // Verifica si la respuesta contiene categorías
         if (categoryResponse != null && categoryResponse.getTrivia_categories() != null) {
             for (OpenTriviaCategoryDTO categoryDTO : categoryResponse.getTrivia_categories()) {
-                //OpenTriviaCategoryDTO categoryDTO = new OpenTriviaCategoryDTO(25, "Art");
+                Optional<Category> PersistedCategory = categoryDao.findById(Long.valueOf(categoryDTO.getId()));
+                Category category = null;
 
-                System.out.println("Obtengo CATEGORIA con ID: " + categoryDTO.getId() + " y nombre: " + categoryDTO.getName());
-                Category category = categoryDao.findByTitle(categoryDTO.getName()).orElse(null);
-                        
-                if (category == null) {
+                if (PersistedCategory.isEmpty()) {
+                    System.out.println("CREATE: Nueva categoría con ID: " + categoryDTO.getId() + " y nombre: " + categoryDTO.getName());
                     category = createCategory(categoryDTO.getId(), categoryDTO.getName());
-                }
-
-                System.out.println("Obtengo cantidad de preguntas en la categoría: " + categoryDTO.getName() + " con ID: " + categoryDTO.getId());
+                } else {                    
+                    category = PersistedCategory.get();
+                    System.out.println("GET: categoría existente - ID: " + category.getId() + " y nombre: " + category.getTitle());
+                }	
                 
-                int totalQuestions = getQuestionCount(categoryDTO.getId());
-                System.out.println("Cantidad de preguntas en la categoría: " + totalQuestions);
-
-                importQuestionsForCategory(totalQuestions, category, quiz);
+                categories.add(category);
             }
         } else {
             System.out.println("No se pudieron obtener categorías desde la API.");
         }
+
+
+        return categories;
     }
 
-    private void importQuestionsForCategory(int amount, Category category, Quiz quiz) {
-        int limitAmount = 50;
+    @Transactional
+    /**
+     * Importa preguntas para una categoría específica desde la API de Open Trivia.
+     * 
+     * @param categoryQuestionCount Cantidad de preguntas totales a importar para la categoría.
+     * @param category Categoría a la que pertenecen las preguntas.
+     * @param quiz Quiz al que pertenecen las preguntas.
+     */
+    public void importQuestionsForCategory(int categoryQuestionCount, Category category, Quiz quiz) {
+        int maxPerRequest = 50;
         int totalQuestionLoaded = 0;
         int responseCode = 0;
+        System.out.println("------------------------------------------------------------------------");
+        System.out.println("Total a importar de la categoría " + category.getId() + " :" + categoryQuestionCount);
 
-        while (responseCode == 0) {
+        while (responseCode == 0 && totalQuestionLoaded < categoryQuestionCount) {
 
-            if(limitAmount > amount) {
-                limitAmount = amount;
-            }
-
-            if (amount - totalQuestionLoaded < limitAmount) {
-                limitAmount = amount - totalQuestionLoaded;            
-            }
-
-            if(limitAmount == 0){
-                return;
-            }
-
-            //String url = String.format("/api.php?amount=%d&category=%d&type=multiple&token=%s", limitAmount, category.getId(), token);
-            String url = String.format("/api.php?amount=%d&category=%d&token=%s", limitAmount, category.getId(), token);
+            int amount = Math.min(maxPerRequest, categoryQuestionCount - totalQuestionLoaded);
+            
+            String url = String.format("/api.php?amount=%d&category=%d&token=%s", amount, category.getId(), token);
             OpenTriviaResponseDTO response = webClient.get()
                     .uri(url)
                     .retrieve()
@@ -114,7 +143,7 @@ public class TriviaImportServiceImpl implements TriviaImportService {
                     .block();
                     
             if (response == null) {
-                System.out.println("No se pudo obtener la respuesta de la API.");
+                System.out.println("No se pudo obtener la respuesta de la API. URL: " + url);
                 throw new RuntimeException("No se pudo obtener la respuesta de la API.");
             }
 
@@ -137,10 +166,22 @@ public class TriviaImportServiceImpl implements TriviaImportService {
                     System.out.println("Rate limit: too many requests in a short period of time. Please wait a while before trying again.");
                     break;
                 default:
-                        int count = 0;
+
                         for (OpenTriviaQuestionDTO dto : response.getResults()) {
-                            count++;
                             
+                            // List<Answer> answers = new ArrayList<>();
+
+                            // Answer correct = new Answer(dto.getCorrect_answer(), true);
+                            // answers.add(correct);
+
+                            // for (String wrong : dto.getIncorrect_answers()) {
+                            //     Answer incorrect = new Answer(wrong, false);
+                            //     answers.add(incorrect);
+                            // }
+
+
+                            // createQuestion(dto.getQuestion(), dto.getType(), Level.valueOf(dto.getDifficulty().toUpperCase()), category, quiz, answers);
+                           
                             Question question = new Question();
                             question.setQuestion(dto.getQuestion());
                             question.setCategory(category);
@@ -163,13 +204,13 @@ public class TriviaImportServiceImpl implements TriviaImportService {
                         }
 
                         totalQuestionLoaded += response.getResults().size();        
-                        System.out.println("Se importaron " + count + " preguntas de la categoría: " + category.getTitle() + " con ID: " + category.getId());
+                        System.out.println("Se importaron " + totalQuestionLoaded);
                     break;
             }
         }
     }
 
-    private int getQuestionCount(int categoryId) {
+    private int getCategoryQuestionCount(Long categoryId) {
         String url = "https://opentdb.com/api_count.php?category=" + categoryId;
 
         return webClient.get()
@@ -215,6 +256,20 @@ public class TriviaImportServiceImpl implements TriviaImportService {
         categoryDao.save(category);
 
         return category;
+    }
+
+    private Question createQuestion(String questionText, String type, Level level, Category category, Quiz quiz, List<Answer> answers) {
+        Question question = new Question();
+        question.setQuestion(questionText);
+        question.setType(type);
+        question.setLevel(level);
+        question.setCategory(category);
+        question.setQuiz(quiz);
+        question.setAnswers(answers);
+
+        questionDao.save(question);
+
+        return question;
     }
 }
 
