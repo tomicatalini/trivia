@@ -5,11 +5,10 @@ import java.util.List;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -20,6 +19,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class Category {
 
     @Id
@@ -37,17 +37,21 @@ public class Category {
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions;
 
-    public Category(String title, String description, boolean enable) {
+    private Long quizId;
+
+    public Category(String title, String description, boolean enable, Long quizId) {
         this.title = title;
         this.description = description;
         this.enable = enable;
+        this.quizId = quizId;
     }
 
-    public Category(Long id, String title, String description, boolean enable) {
+    public Category(Long id, String title, String description, boolean enable, Long quizId) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.enable = enable;
+        this.quizId = quizId;
     }
 
 }

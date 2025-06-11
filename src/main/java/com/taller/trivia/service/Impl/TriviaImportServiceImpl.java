@@ -57,7 +57,7 @@ public class TriviaImportServiceImpl implements TriviaImportService {
             throw new RuntimeException("Quiz not found");
         }
         
-        List<Category> categories = importCategories();
+        List<Category> categories = importCategories(quiz.get().getId());
 
         for (Category category : categories) {
 
@@ -81,7 +81,7 @@ public class TriviaImportServiceImpl implements TriviaImportService {
      *
      * @return Lista de categorías importadas.
      */
-    public List<Category> importCategories() {
+    public List<Category> importCategories(Long quizId) {
         List<Category> categories = new ArrayList<>();
 
         // Obtiene las categorías desde la API de Open Trivia
@@ -99,7 +99,7 @@ public class TriviaImportServiceImpl implements TriviaImportService {
 
                 if (PersistedCategory.isEmpty()) {
                     System.out.println("CREATE: Nueva categoría con ID: " + categoryDTO.getId() + " y nombre: " + categoryDTO.getName());
-                    category = createCategory(categoryDTO.getId(), categoryDTO.getName());
+                    category = createCategory(categoryDTO.getId(), categoryDTO.getName(), quizId);
                 } else {                    
                     category = PersistedCategory.get();
                     System.out.println("GET: categoría existente - ID: " + category.getId() + " y nombre: " + category.getTitle());
@@ -246,30 +246,17 @@ public class TriviaImportServiceImpl implements TriviaImportService {
         return tokenResponse != null ? tokenResponse.getToken() : fetchToken();
     }
 
-    private Category createCategory(int id, String name) {
+    private Category createCategory(int id, String name, Long quizId) {
         Category category = new Category();
         category.setId((long) id);
         category.setTitle(name);
         category.setDescription(name);
         category.setEnable(true);
+        category.setQuizId(quizId);
 
         categoryDao.save(category);
 
         return category;
-    }
-
-    private Question createQuestion(String questionText, String type, Level level, Category category, Quiz quiz, List<Answer> answers) {
-        Question question = new Question();
-        question.setQuestion(questionText);
-        question.setType(type);
-        question.setLevel(level);
-        question.setCategory(category);
-        question.setQuiz(quiz);
-        question.setAnswers(answers);
-
-        questionDao.save(question);
-
-        return question;
     }
 }
 

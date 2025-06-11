@@ -84,4 +84,16 @@ public class CategoryServiceImpl implements CategoryService {
                                  
     }
 
+    @Override
+    public List<CategoryDTO> getAllQuizCategories(Long quizId) {
+        try {
+            return repository.findAll().stream()
+                             .map(DTOMapper::toCategoryDTO)
+                             .filter(category -> category.getQuizId().equals(quizId))
+                             .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }
+    }
+
 }

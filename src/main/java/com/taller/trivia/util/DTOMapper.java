@@ -108,7 +108,8 @@ public class DTOMapper {
             category.getId(), 
             category.getTitle(), 
             category.getDescription(), 
-            category.isEnable()
+            category.isEnable(),
+            category.getQuizId()
         );
     }
 
@@ -117,7 +118,8 @@ public class DTOMapper {
             dto.getId(), 
             dto.getTitle(), 
             dto.getDescription(), 
-            dto.isEnable()
+            dto.isEnable(),
+            dto.getQuizId()
         );
     }
 

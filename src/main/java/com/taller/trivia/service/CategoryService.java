@@ -11,5 +11,7 @@ public interface CategoryService {
     public void delete(Long id);    
     public List<CategoryDTO> getAllCategories();
     public CategoryDTO getCategoryById(Long id);
+    
+    public List<CategoryDTO> getAllQuizCategories(Long quizId);
 
 }
