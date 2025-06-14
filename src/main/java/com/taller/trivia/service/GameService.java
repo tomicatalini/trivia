@@ -10,7 +10,6 @@ public interface GameService {
     GameDTO createGame(Long quizId, Long playerId, Long categoryId, String level, int numberOfQuestions);
     GameDTO getGameById(Long gameId);
     List<GameDTO> getAllGamesByPlayerId(Long playerId);
-    void startGame(Long gameId, Long playerId);
     void endGame(Long gameId, Date endDate,List<GameQuestionDTO> gamesQuestions);
     void saveGameQuestions(Long gameId, List<GameQuestionDTO> gameQuestions);
 }

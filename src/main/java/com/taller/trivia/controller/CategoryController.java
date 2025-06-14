@@ -24,7 +24,7 @@ public class CategoryController {
     }
 
     @GetMapping()
-    public ResponseEntity<?> getAllCategories(@RequestParam("quizId") Long quizId) {
+    public ResponseEntity<?> getAllCategories(@RequestParam Long quizId) {
         try {
             List<CategoryDTO> categories = categoryService.getAllQuizCategories(quizId);
             return ResponseHandler.handleResponse(categories);

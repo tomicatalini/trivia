@@ -38,15 +38,6 @@ public class GameServiceImpl implements GameService {
     @Autowired
     private QuestionDao questionDao;
 
-    // @Autowired
-    // private QuestionService questionService;
-
-    // private final QuestionService questionService;
-
-    // public GameServiceImpl(QuestionService questionService) {
-    //     this.questionService = questionService;
-    // }
-
     @Override
     public GameDTO createGame(Long quizId, Long userId, Long categoryId, String level, int numberOfQuestions) {
         if (quizId == null || userId == null) {
@@ -66,8 +57,6 @@ public class GameServiceImpl implements GameService {
         game.setStartDate(new Date());
         game.setEndDate(null);
         game.setScore(0L);
-        //game.setGameQuestions(new ArrayList<>());
-        //game = this.gameDao.save(game);
     
         List<Question> questions = this.questionDao.findRandomQuestions(categoryId, quizId, level, numberOfQuestions);
 
@@ -124,11 +113,6 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public void startGame(Long gameId, Long playerId) {
-        // TODO: Implementar lógica de inicio de juego
-    }
-
-    @Override
     public List<GameDTO> getAllGamesByPlayerId(Long playerId) {
         if (playerId == null) {
             throw new IllegalArgumentException("El ID del jugador no puede ser nulo.");
@@ -149,7 +133,6 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public void endGame(Long gameId, Date endDate, List<GameQuestionDTO> gamesQuestions) {
-        // TODO: Implementar lógica para finalizar el juego
         Game game = DTOMapper.toGameEntity(this.getGameById(gameId));
 
         if (game == null) {
@@ -213,6 +196,7 @@ public class GameServiceImpl implements GameService {
 
     public Long calculateQuestionDifficultyFactor(Question question) {
         String difficulty = question.getLevel().toString().toLowerCase();
+
         // Factor de dificultad: 1 punto para fácil, 3 puntos para medio, 5 puntos para difícil
         switch (difficulty) {
             case "easy":
