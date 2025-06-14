@@ -3,6 +3,7 @@ package com.taller.trivia.dao;
 import java.util.List;
 import java.util.Optional;
 
+import com.taller.trivia.model.Level;
 import com.taller.trivia.model.Question;
 
 public interface QuestionDao {
@@ -14,4 +15,6 @@ public interface QuestionDao {
     List<Question> findAllByCategory(Long id);       
     List<Question> findAllQuestionsGame(Long gameId);
     List<Question> findRandomQuestions(Long categoryId, Long quizId, String level, int limit);
+
+    List<Level> findAllQuestionsLevel();
 }

@@ -74,4 +74,14 @@ public class QuizServiceImpl implements QuizService {
         }
     }
 
+    @Override
+    public QuizDTO getByName(String quizName) {
+        try {
+            return repository.findByName(quizName)
+                             .map(DTOMapper::toQuizDTO)
+                             .orElse(null);
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }
+    }
 }

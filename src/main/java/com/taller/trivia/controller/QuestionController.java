@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.taller.trivia.dto.LevelDTO;
 import com.taller.trivia.dto.QuestionDTO;
 import com.taller.trivia.service.QuestionService;
 import com.taller.trivia.util.ErrorMessageLoader;
@@ -34,4 +35,15 @@ public class QuestionController {
         }
     }
 
+    @GetMapping("/level")
+    public ResponseEntity<?> getQuestionsLevel(){
+        try {
+            List<LevelDTO> levels = questionService.getQuestionsLevel();
+            return ResponseHandler.handleResponse(levels);
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                    ErrorMessageLoader.getMessage("SERVER_ERROR"), e.getMessage());
+        }
+    }
 }

@@ -9,5 +9,6 @@ public interface QuizDao {
     List<Quiz> findAll();
     Quiz save(Quiz quiz);
     Quiz update(Long quizId, Quiz quiz);    
-    boolean delete(Long id);  
+    boolean delete(Long id);
+    Optional<Quiz> findByName(String name);
 }

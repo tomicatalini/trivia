@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,8 +14,8 @@ import com.taller.trivia.service.QuestionService;
 import com.taller.trivia.util.DTOMapper;
 import com.taller.trivia.util.ErrorMessageLoader;
 import com.taller.trivia.dao.QuestionDao;
-import com.taller.trivia.dto.GameDTO;
 import com.taller.trivia.dto.GameQuestionDTO;
+import com.taller.trivia.dto.LevelDTO;
 import com.taller.trivia.dto.QuestionDTO;
 import com.taller.trivia.exception.BusinessException;
 import com.taller.trivia.exception.ServiceException;
@@ -27,6 +28,7 @@ public class QuestionServiceImpl implements QuestionService{
     private QuestionDao repository;
 
     @Autowired
+    @Lazy
     private GameService gameService;
     
     @Transactional
@@ -101,17 +103,27 @@ public class QuestionServiceImpl implements QuestionService{
     }
 
     @Override
-    public List<GameQuestionDTO> getRandomQuestions(Long quizId, Long categoryId, Long gameId, String level, int numberOfQuestions) {
-        GameDTO gameDTO = gameService.getGameById(gameId);        
+    public List<GameQuestionDTO> getRandomQuestions(Long quizId, Long categoryId, Long gameId, String level, int numberOfQuestions) {   
         List<Question> questions = repository.findRandomQuestions(categoryId, quizId, level, numberOfQuestions);
         
         return questions.stream()
                 .map((question) -> {
                     GameQuestionDTO gameQuestionDTO = new GameQuestionDTO();
                     gameQuestionDTO.setQuestion(DTOMapper.toQuestionDTO(question));
-                    gameQuestionDTO.setGame(gameDTO);
+                    gameQuestionDTO.setGameId(gameId);
                     return gameQuestionDTO;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<LevelDTO> getQuestionsLevel() {
+        try {
+            return repository.findAllQuestionsLevel().stream()
+                             .map(DTOMapper::toLevelDTO)
+                             .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }
     }
 }

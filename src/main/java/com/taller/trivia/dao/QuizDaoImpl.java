@@ -17,6 +17,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
 @Repository
@@ -94,6 +95,25 @@ public class QuizDaoImpl implements QuizDao {
             criteriaQuery.select(root);
 
             return entityManager.createQuery(criteriaQuery).getResultList();
+        });
+    }
+
+    @Override
+    public Optional<Quiz> findByName(String name) {
+        return executeQuery(() -> {
+            try {
+                CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+                CriteriaQuery<Quiz> criteriaQuery = criteriaBuilder.createQuery(Quiz.class);
+                Root<Quiz> root = criteriaQuery.from(Quiz.class);
+                criteriaQuery.select(root);
+
+                Predicate categoryPredicate = criteriaBuilder.equal(root.get("name"), name);
+                criteriaQuery.where(categoryPredicate);
+            
+                return Optional.ofNullable(entityManager.createQuery(criteriaQuery).getSingleResult());
+            } catch (jakarta.persistence.NoResultException e) {
+                return Optional.empty();
+            }
         });
     }
 

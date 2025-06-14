@@ -118,32 +118,43 @@ public class QuestionDaoImpl implements QuestionDao {
 
     @Override
     public List<Question> findRandomQuestions(Long categoryId, Long quizId, String level_String, int limit) {
-        if (level_String.isBlank()) {
-            String sql = "SELECT * FROM question " +
-                     "WHERE category_id = :categoryId AND quiz_id = :quizId " +
-                     "ORDER BY RAND() LIMIT :limit";
+        String finalSQL;
+        String baseSql = "SELECT * FROM question WHERE quiz_id = " + quizId;
 
-            return executeQuery(() -> {
-                return  entityManager.createNativeQuery(sql, Question.class)
-                        .setParameter("categoryId", categoryId)
-                        .setParameter("quizId", quizId)
-                        .setParameter("limit", limit)
-                        .getResultList();
-            });
-        } else {
-            String sql = "SELECT * FROM question " +
-                     "WHERE category_id = :categoryId AND quiz_id = :quizId AND level = :levelValue " +
-                     "ORDER BY RAND() LIMIT :limit";
-
-            return executeQuery(() -> {
-                return entityManager.createNativeQuery(sql, Question.class)
-                        .setParameter("categoryId", categoryId)
-                        .setParameter("quizId", quizId)
-                        .setParameter("levelValue", Level.valueOf(level_String))
-                        .setParameter("limit", limit)
-                        .getResultList();
-            });
+        if (categoryId != null && categoryId > 0) {
+            baseSql += " AND category_id = " + categoryId;
         }
+
+        switch (level_String) {
+            case "RANDOM":
+                finalSQL = baseSql + " ORDER BY RAND() LIMIT " + limit;
+                break;
+            
+            case "EASY_TO_HARD":
+
+                String easySql = baseSql + " AND level = 'EASY' ORDER BY RAND() LIMIT " + (limit / 3);
+                String mediumSql = baseSql + " AND level = 'MEDIUM' ORDER BY RAND() LIMIT " + (limit / 3);
+                String hardSql = baseSql + " AND level = 'HARD' ORDER BY RAND() LIMIT " + (limit / 3);
+
+                finalSQL = "(" + easySql + ") UNION ALL (" + mediumSql + ") UNION ALL (" + hardSql + ") ORDER BY FIELD(level, 'EASY', 'MEDIUM', 'HARD')";
+                break;
+                
+            default:
+
+                finalSQL = baseSql + " AND level = '" + level_String + "' ORDER BY RAND() LIMIT " + limit;
+                break;
+        }
+
+        return executeQuery(() -> {
+            return entityManager.createNativeQuery(finalSQL, Question.class).getResultList();
+        });
         
+    }
+
+    @Override
+    public List<Level> findAllQuestionsLevel() {
+        return executeQuery(() -> {
+            return List.of(Level.values());
+        });
     }
 }

@@ -22,12 +22,13 @@ public class UserDTO {
     private String email;
     private String password;
     private Rol rol;
-    private List<GameDTO> games = new ArrayList<>();
+    private List<GameDTO> games;
 
     public UserDTO(Long id, String name, String email, Rol rol) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.rol = rol;
+        this.games = new ArrayList<>();
     }
 }

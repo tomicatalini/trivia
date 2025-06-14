@@ -12,7 +12,8 @@ import com.taller.trivia.service.QuizService;
 import com.taller.trivia.util.ErrorMessageLoader;
 import com.taller.trivia.util.ResponseHandler;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 
 @RestController
@@ -35,6 +36,31 @@ public class QuizController {
         try {
             List<QuizDTO> quizzes = quizService.getAll();
             return ResponseHandler.handleResponse(quizzes);
+        } catch (Exception e) {
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                    ErrorMessageLoader.getMessage("SERVER_ERROR"), e.getMessage());
+        }
+    }
+
+    //Endpoint para crear un nuevo conjunto de preguntas
+    @PostMapping("/new")
+    public ResponseEntity<?> createQuiz(@RequestBody QuizDTO quizDTO) {
+        try {
+
+            if (quizDTO == null || quizDTO.getName() == null || quizDTO.getUrl() == null) {
+                return ResponseHandler.handleErrorResponse(HttpStatus.BAD_REQUEST,
+                        ErrorMessageLoader.getMessage("VALIDATION_REQUIRED_MULT", "nombre, url"),
+                        null);
+            }
+
+            if (quizService.getByName(quizDTO.getName()) != null) {
+                return ResponseHandler.handleErrorResponse(HttpStatus.BAD_REQUEST,
+                        ErrorMessageLoader.getMessage("QUIZ_ALREADY_EXISTS", quizDTO.getName()),
+                        null);                
+            }
+
+            quizService.save(quizDTO);
+            return ResponseHandler.handleResponse(quizDTO);
         } catch (Exception e) {
             return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
                     ErrorMessageLoader.getMessage("SERVER_ERROR"), e.getMessage());

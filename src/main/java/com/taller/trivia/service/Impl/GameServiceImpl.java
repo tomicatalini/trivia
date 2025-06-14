@@ -1,42 +1,54 @@
 package com.taller.trivia.service.Impl;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.taller.trivia.dao.GameDao;
+import com.taller.trivia.dao.QuestionDao;
+import com.taller.trivia.dao.QuizDao;
+import com.taller.trivia.dao.UserDao;
 import com.taller.trivia.dto.GameDTO;
 import com.taller.trivia.dto.GameQuestionDTO;
+import com.taller.trivia.model.Answer;
 import com.taller.trivia.model.Game;
 import com.taller.trivia.model.GameQuestion;
 import com.taller.trivia.model.Question;
 import com.taller.trivia.model.Quiz;
 import com.taller.trivia.model.User;
 import com.taller.trivia.service.GameService;
-import com.taller.trivia.service.QuestionService;
-import com.taller.trivia.service.QuizService;
-import com.taller.trivia.service.UserService;
 import com.taller.trivia.util.DTOMapper;
 
 @Service
 public class GameServiceImpl implements GameService {
 
-    @Autowired
-    @Lazy
-    private QuestionService questionService;
-    @Autowired
-    private QuizService quizService;
-    @Autowired
-    private UserService userService;
 
     @Autowired
     private GameDao gameDao;
 
+    @Autowired
+    private QuizDao quizDao;
+
+    @Autowired
+    private UserDao userDao;
+
+    @Autowired
+    private QuestionDao questionDao;
+
+    // @Autowired
+    // private QuestionService questionService;
+
+    // private final QuestionService questionService;
+
+    // public GameServiceImpl(QuestionService questionService) {
+    //     this.questionService = questionService;
+    // }
+
     @Override
-    public void createGame(Long quizId, Long userId, Long categoryId, String level, int numberOfQuestions) {
+    public GameDTO createGame(Long quizId, Long userId, Long categoryId, String level, int numberOfQuestions) {
         if (quizId == null || userId == null) {
             throw new IllegalArgumentException("El ID del cuestionario y el ID del jugador no pueden ser nulos.");
         }
@@ -45,8 +57,8 @@ public class GameServiceImpl implements GameService {
             throw new IllegalArgumentException("El número de preguntas debe ser mayor que 0.");
         }
 
-        Quiz quiz = DTOMapper.toQuizEntity(quizService.getById(quizId).orElse(null));
-        User user = DTOMapper.toUserEntity(userService.getById(userId).orElse(null));
+        Quiz quiz = this.quizDao.findById(quizId).orElseThrow(() -> new IllegalArgumentException("Cuestionario no encontrado con ID: " + quizId));
+        User user = this.userDao.findById(userId).orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + userId));
 
         Game game = new Game();
         game.setQuiz(quiz);
@@ -54,11 +66,46 @@ public class GameServiceImpl implements GameService {
         game.setStartDate(new Date());
         game.setEndDate(null);
         game.setScore(0L);
-        game.setGameQuestions(null);
-        game = this.gameDao.save(game);
-        
-        List<GameQuestionDTO> questions = this.questionService.getRandomQuestions(quizId, categoryId, game.getId(), level, numberOfQuestions);
-        this.saveGameQuestions(categoryId, questions);
+        //game.setGameQuestions(new ArrayList<>());
+        //game = this.gameDao.save(game);
+    
+        List<Question> questions = this.questionDao.findRandomQuestions(categoryId, quizId, level, numberOfQuestions);
+
+        if (questions == null || questions.isEmpty()) {
+            throw new IllegalArgumentException("No se encontraron preguntas para el juego con ID: " + game.getId());            
+        } else {
+            System.out.println("Se encontraron " + questions.size() + " preguntas para el juego con ID: " + game.getId());
+        }
+
+        List<GameQuestion> gameQuestions = new ArrayList<>();
+
+        System.out.println("Preparando GameQuestionDTOs");
+        for (Question question : questions) {
+            
+            for (Answer answer : question.getAnswers()) {
+                System.out.println("Id de la respuesta: " + answer.getId());
+                System.out.println("Texto de la respuesta: " + answer.getAnswer());
+                System.out.println("Es correcta: " + (answer.isValid() ? "Sí" : "No"));
+            }
+
+            GameQuestion gameQuestion = new GameQuestion(
+                game,
+                question,
+                null,
+                null
+            );
+
+            gameQuestions.add(gameQuestion);
+        }
+
+        game.setGameQuestions(gameQuestions);
+
+        System.out.println("Guardando GameQuestionDTOs");
+        game = this.gameDao.save(game);        
+        //this.saveGameQuestions(categoryId, gameQuestions);
+
+        System.out.println("retorno el GameDTO");
+        return DTOMapper.toGameDTO(game);
     }
 
     @Override
@@ -131,7 +178,20 @@ public class GameServiceImpl implements GameService {
                 .map(DTOMapper::toGameQuestionEntity)
                 .toList());
 
-        this.gameDao.save(game);
+        System.out.println("Guardando Game con ID: " + game.getId() + " y " + game.getGameQuestions().size() + " preguntas.");
+
+        System.out.println(game.getScore());
+        System.out.println(game.getStartDate());
+        System.out.println(game.getEndDate());
+        System.out.println(game.getUser().getName());
+        System.out.println(game.getQuiz().getName());
+        try {
+            this.gameDao.save(game);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error al guardar el juego: " + e.getMessage());
+        }
+        
     }
 
 

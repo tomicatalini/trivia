@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class GameQuestionDTO {
     //Relación
-    private GameDTO game;
+    private long gameId;
     private QuestionDTO question;
 
     //Datos extras
