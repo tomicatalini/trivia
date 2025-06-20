@@ -24,7 +24,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDTO save(CategoryDTO categoryDto) {
         
         try {
-            if (categoryDto == null || categoryDto.getTitle() == null || categoryDto.getDescription() == null) {
+            if (categoryDto == null || categoryDto.getCategory() == null || categoryDto.getDescription() == null) {
                 throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED_MULT", "titulo, descripcion"));
             }
             Category category = DTOMapper.toCategoryEntity(categoryDto);
@@ -44,7 +44,7 @@ public class CategoryServiceImpl implements CategoryService {
             throw new IllegalArgumentException("El objeto categoryDto no puede ser nulo");
         }
 
-        if (categoryDto.getTitle() == null) {
+        if (categoryDto.getCategory() == null) {
             throw new IllegalArgumentException("El campo 'name' es obligatorio");
         }
 

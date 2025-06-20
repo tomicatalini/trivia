@@ -13,15 +13,15 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CategoryDTO {
     private Long id;
-    private String title;
+    private String category;
     private String description;
     private boolean enable;
     private Long quizId;
     private List<QuestionDTO> questions;
 
-    public CategoryDTO(Long id, String title, String description, boolean enable, Long quizId) {
+    public CategoryDTO(Long id, String category, String description, boolean enable, Long quizId) {
         this.id = id;
-        this.title = title;
+        this.category = category;
         this.description = description;
         this.enable = enable;
         this.quizId = quizId;

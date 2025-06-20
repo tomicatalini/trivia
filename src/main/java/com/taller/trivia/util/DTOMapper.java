@@ -3,6 +3,7 @@ package com.taller.trivia.util;
 import java.util.stream.Collectors;
 
 import com.taller.trivia.dto.AnswerDTO;
+import com.taller.trivia.dto.AuthDTO;
 import com.taller.trivia.dto.CategoryDTO;
 import com.taller.trivia.dto.GameDTO;
 import com.taller.trivia.dto.GameQuestionDTO;
@@ -14,6 +15,7 @@ import com.taller.trivia.model.Answer;
 import com.taller.trivia.model.Category;
 import com.taller.trivia.model.Question;
 import com.taller.trivia.model.Quiz;
+import com.taller.trivia.model.Rol;
 import com.taller.trivia.model.User;
 import com.taller.trivia.model.Game;
 import com.taller.trivia.model.GameQuestion;
@@ -139,7 +141,7 @@ public class DTOMapper {
     public static Category toCategoryEntity(CategoryDTO dto) {
         return new Category(
             dto.getId(), 
-            dto.getTitle(), 
+            dto.getCategory(), 
             dto.getDescription(), 
             dto.isEnable(),
             dto.getQuizId()
@@ -212,5 +214,15 @@ public class DTOMapper {
 
     public static LevelDTO toLevelDTO(Level level) {
         return new LevelDTO(level.name());
+    }
+
+    //AuthDTO
+    public static AuthDTO toAuthDTO(User user) {
+        AuthDTO authDTO = new AuthDTO();
+        authDTO.setUserId(user.getId());
+        authDTO.setUsername(user.getName());
+        authDTO.setEmail(user.getEmail());
+        authDTO.setAdmin(user.getRol().equals(Rol.ADMIN) ? true : false);
+        return authDTO;
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.taller.trivia.dao.UserDao;
+import com.taller.trivia.dto.AuthDTO;
 import com.taller.trivia.dto.UserDTO;
 import com.taller.trivia.exception.BusinessException;
 import com.taller.trivia.exception.DatabaseException;
@@ -153,22 +154,38 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean validateUserPass(String username, String password) {
+    public AuthDTO validateUserPass(String userdata, String password) {
         try {
-            if (username.isBlank()) {
+            if (userdata.isBlank()) {
                 throw new BusinessException(ErrorMessageLoader.getMessage("USER_INVALID_CREDENTIALS"));
             }
 
-            String userPass = this.repository.findByEmail(username)
-                           .map(user -> user.getPassword())
-                           .orElseGet(() -> 
-                                this.repository.findByName(username)
-                                               .map(user -> user.getPassword())
-                                               .orElseThrow( () -> new BusinessException(ErrorMessageLoader.getMessage("USER_NOT_FOUND", "EMAL o NOMBRE", username))
-                                               )
-                           );
+            User user = repository.findByEmail(userdata)
+                .orElseGet( () -> repository.findByName(userdata)
+                    .orElseThrow( () -> new BusinessException(ErrorMessageLoader.getMessage("USER_NOT_FOUND", "EMAL o NOMBRE", userdata) ))
+                );
 
-            return this.passwordEncoder.matches(password, userPass);
+            AuthDTO authDTO = DTOMapper.toAuthDTO(user);
+            authDTO.setAuthenticated(this.passwordEncoder.matches(password, user.getPassword()));
+            
+            // AuthDTO authDTO;
+            // Optional<User> user = this.repository.findByEmail(userdata);
+
+            // if(!user.isPresent()) {
+            //     user = this.repository.findByName(userdata);
+
+            //     if (user.isPresent()) {
+            //         user = this.repository.findByEmail(userdata);
+
+            //     } else {
+            //         throw new BusinessException(ErrorMessageLoader.getMessage("USER_NOT_FOUND", "EMAL o NOMBRE", userdata));
+            //     }
+            // }
+            
+            // authDTO = DTOMapper.toAuthDTO(user.get());
+            //authDTO.setAuthenticated(this.passwordEncoder.matches(password, user.get().getPassword()));
+
+            return authDTO;
         } catch (BusinessException e) {
             throw e; // La excepción de validación se lanza tal cual
         } catch (Exception e) {

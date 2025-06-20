@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.taller.trivia.dto.AuthDTO;
 import com.taller.trivia.dto.LoginDTO;
 import com.taller.trivia.dto.UserDTO;
 import com.taller.trivia.exception.BusinessException;
@@ -145,9 +146,10 @@ public class UserController {
     @PostMapping("/validate")
     public ResponseEntity<?> validateUser(@RequestBody LoginDTO login) {
         try {
-            boolean isValid = userService.validateUserPass(login.getUsername(), login.getPassword());
-            return isValid 
-                ? ResponseHandler.handleResponse(isValid)
+            AuthDTO authDTO = userService.validateUserPass(login.getUsername(), login.getPassword());
+            
+            return authDTO.isAuthenticated() 
+                ? ResponseHandler.handleResponse(authDTO)
                 : ResponseHandler.handleErrorResponse(HttpStatus.UNAUTHORIZED,
                                     ErrorMessageLoader.getMessage("AUTH_BAD_CREDENTIALS"),
                                     "");

@@ -125,10 +125,12 @@ public class UserDaoImpl implements UserDao {
             CriteriaQuery<User> criteriaQuery = criteriaBuilder.createQuery(User.class);
             Root<User> root = criteriaQuery.from(User.class);
 
-            Predicate namePredicate = criteriaBuilder.equal(root.get("name"), name);
+            Predicate namePredicate = criteriaBuilder.equal(root.get("name"), name.toLowerCase());
             criteriaQuery.select(root).where(namePredicate);
-            
-            return Optional.ofNullable(entityManager.createQuery(criteriaQuery).getSingleResult());
+
+            List<User> users = entityManager.createQuery(criteriaQuery).getResultList();
+
+            return Optional.ofNullable(users.size() > 0 ? users.get(0) : null);
         });        
     }
 
@@ -142,7 +144,9 @@ public class UserDaoImpl implements UserDao {
             Predicate emailPredicate = criteriaBuilder.equal(root.get("email"), email);
             criteriaQuery.select(root).where(emailPredicate);
 
-            return Optional.ofNullable(entityManager.createQuery(criteriaQuery).getSingleResult());
+            List<User> users = entityManager.createQuery(criteriaQuery).getResultList();
+
+            return Optional.ofNullable(users.size() > 0 ? users.get(0) : null);
         });        
     }
 }
