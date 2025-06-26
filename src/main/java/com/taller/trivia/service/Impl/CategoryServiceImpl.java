@@ -40,24 +40,32 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDTO update(Long id, CategoryDTO categoryDto) {
-        if (categoryDto == null) {
-            throw new IllegalArgumentException("El objeto categoryDto no puede ser nulo");
-        }
+        
+        try {
+            Category category = DTOMapper.toCategoryEntity(categoryDto);
+            category.setId(id);
+            if (categoryDto == null || categoryDto.getCategory() == null || categoryDto.getDescription() == null) {
+                throw new BusinessException(ErrorMessageLoader.getMessage("VALIDATION_REQUIRED_MULT", "titulo, descripcion"));
+            }
+            // Save the updated category
+            category = repository.save(category);
+            return DTOMapper.toCategoryDTO(category);
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }     
 
-        if (categoryDto.getCategory() == null) {
-            throw new IllegalArgumentException("El campo 'name' es obligatorio");
-        }
-
-        Category category = DTOMapper.toCategoryEntity(categoryDto);
-        category.setId(id);
-
-        category = repository.save(category);
-        return DTOMapper.toCategoryDTO(category);
     }
 
     @Override
-    public void delete(Long id) {
-        repository.delete(id);
+    public boolean delete(Long id) {
+        try {
+            if (!repository.delete(id)) {
+                throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+            }
+            return true;
+        } catch (Exception e) {
+            throw new ServiceException(ErrorMessageLoader.getMessage("DATABASE_QUERY_ERROR"));
+        }
     }
 
     @Override

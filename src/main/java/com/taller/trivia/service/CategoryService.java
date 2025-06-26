@@ -8,7 +8,7 @@ public interface CategoryService {
 
     public CategoryDTO save(CategoryDTO category);
     public CategoryDTO update(Long id, CategoryDTO category);
-    public void delete(Long id);    
+    public boolean delete(Long id);    
     public List<CategoryDTO> getAllCategories();
     public CategoryDTO getCategoryById(Long id);
     
