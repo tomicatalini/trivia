@@ -2,6 +2,7 @@ package com.taller.trivia.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +26,7 @@ public class GameController {
     
     @PostMapping("/start")
     public ResponseEntity<?> startGame(@RequestBody StartGameRequestDTO startGameRequest) {
-         try {
+        try {
 
             GameDTO gameDTO = this.gameService.createGame(
                 startGameRequest.getQuizId(),
@@ -38,6 +39,35 @@ public class GameController {
             return ResponseHandler.handleResponse(gameDTO);
         } catch (Exception e) {
             System.out.println("GameController error: " + e.getMessage());
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                    ErrorMessageLoader.getMessage("SERVER_ERROR"), e.getMessage());
+        }
+    }
+
+    @PostMapping("/end")
+    public ResponseEntity<?> endGame(@RequestBody GameDTO gameDTO) {
+        try {
+            long score = this.gameService.endGame(
+                    gameDTO.getGameId(), 
+                    gameDTO.getEndDate(), 
+                    gameDTO.getGameQuestions()
+                );
+            
+            return ResponseHandler.handleResponse(score);
+        } catch (Exception e) {
+            return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                    ErrorMessageLoader.getMessage("SERVER_ERROR"), e.getMessage());
+        }
+    }
+
+    @GetMapping("/ranking")
+    public ResponseEntity<?> findUsersTops() {
+        try {
+
+            return ResponseHandler.handleResponse(
+                this.gameService.findTopRanking(20)
+            );
+        } catch (Exception e) {
             return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
                     ErrorMessageLoader.getMessage("SERVER_ERROR"), e.getMessage());
         }

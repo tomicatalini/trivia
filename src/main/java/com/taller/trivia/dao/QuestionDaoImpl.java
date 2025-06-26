@@ -117,7 +117,7 @@ public class QuestionDaoImpl implements QuestionDao {
     };
 
     @Override
-    public List<Question> findRandomQuestions(Long categoryId, Long quizId, String level_String, int limit) {
+    public List<Question> findRandomQuestions(Long quizId, Long categoryId, String level_String, int limit) {
         String finalSQL;
         String baseSql = "SELECT * FROM question WHERE quiz_id = " + quizId;
 
