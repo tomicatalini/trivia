@@ -38,13 +38,16 @@ public class GameQuestion {
     private Date finish;
     private boolean valid; // true si la respuesta es correcta, false si no lo es
 
-    public GameQuestion(Game game, Question question, Date start, Date finish) {
+    public GameQuestion(Game game, Question question, Date start, Date finish, Boolean valid) {
         
         this.id.setGameId(game.getId());
         this.id.setQuestionId(question.getId());
         
         this.question = question;
         this.game = game;
-        this.valid = false;
+
+        this.start = start;
+        this.finish = finish;
+        this.valid = valid;
     }      
 }

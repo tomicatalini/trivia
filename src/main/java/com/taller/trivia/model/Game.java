@@ -3,7 +3,10 @@ package com.taller.trivia.model;
 import java.util.Date;
 import java.util.List;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,14 +29,20 @@ public class Game {
 
     @Id
     @GeneratedValue( strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private Long score;
+    private long id;
+    
     private Date startDate;
     private Date endDate;
 
-    //Relaciones
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mode", nullable = false)
+    private GameMode mode;
 
+    private int numberOfQuestions;
+    private long score;
+    private long time;
+
+    //Relaciones
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;

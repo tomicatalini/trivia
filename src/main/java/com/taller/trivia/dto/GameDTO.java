@@ -13,10 +13,13 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GameDTO {
-    private long id;
-    private long score;
+    private long gameId;
     private Date startDate;
     private Date endDate;
+    private String mode;
+    private int numberOfQuestions;
+    private long score;
+    private long time;
     private long userId;
     private long quizId;
     private List<GameQuestionDTO> gameQuestions;

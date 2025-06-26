@@ -102,17 +102,18 @@ public class GameDaoImpl  implements GameDao {
     };
 
     @Override
-    public List<Game> findTopScores(Integer count) {
+    public List<Game> findTopRanking(int number) {
         return executeQuery(() -> {
             CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<Game> criteriaQuery = criteriaBuilder.createQuery(Game.class);
             Root<Game> root = criteriaQuery.from(Game.class);
 
-            // Filtro por usuario
-            criteriaQuery.select(root).orderBy(criteriaBuilder.desc(root.get("score")));
+            criteriaQuery.select(root)
+                .where(criteriaBuilder.isNotNull(root.get("score")))
+                .orderBy(criteriaBuilder.desc(root.get("score")));
 
             return entityManager.createQuery(criteriaQuery)
-                                .setMaxResults(count)
+                                .setMaxResults(number)
                                 .getResultList();
         });
     };

@@ -1,5 +1,7 @@
 package com.taller.trivia.util;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import com.taller.trivia.dto.AnswerDTO;
@@ -10,6 +12,7 @@ import com.taller.trivia.dto.GameQuestionDTO;
 import com.taller.trivia.dto.LevelDTO;
 import com.taller.trivia.dto.QuestionDTO;
 import com.taller.trivia.dto.QuizDTO;
+import com.taller.trivia.dto.RankingDTO;
 import com.taller.trivia.dto.UserDTO;
 import com.taller.trivia.model.Answer;
 import com.taller.trivia.model.Category;
@@ -18,6 +21,7 @@ import com.taller.trivia.model.Quiz;
 import com.taller.trivia.model.Rol;
 import com.taller.trivia.model.User;
 import com.taller.trivia.model.Game;
+import com.taller.trivia.model.GameMode;
 import com.taller.trivia.model.GameQuestion;
 import com.taller.trivia.model.Level;
 
@@ -55,13 +59,17 @@ public class DTOMapper {
 
     //Question <-> QuestionDTO
     public static QuestionDTO toQuestionDTO(Question question) {
+
+        List<Answer> answers = question.getAnswers();
+        Collections.shuffle(answers);
+
         return new QuestionDTO(
             question.getId(),
             question.getQuestion(),
             question.getType(),
             question.getLevel(),
             toCategoryDTO(question.getCategory()),            
-            question.getAnswers().stream()
+            answers.stream()
                 .map(DTOMapper::toAnswerDTO)
                 .collect(Collectors.toList())
         );
@@ -154,9 +162,12 @@ public class DTOMapper {
 
         return new GameDTO(
                 game.getId(),
-                game.getScore(),
                 game.getStartDate(),
                 game.getEndDate(),
+                game.getMode().name(),
+                game.getNumberOfQuestions(),
+                game.getScore(),
+                game.getTime(),
                 game.getUser() != null ? game.getUser().getId() : null,
                 game.getQuiz() != null ? game.getQuiz().getId() : null,
                 game.getGameQuestions().stream()
@@ -168,10 +179,13 @@ public class DTOMapper {
     public static Game toGameEntity(GameDTO dto) {
 
         return new Game(
-                dto.getId(),
-                dto.getScore(),
+                dto.getGameId(),
                 dto.getStartDate(),
                 dto.getEndDate(),
+                GameMode.valueOf(dto.getMode().toUpperCase()),
+                dto.getNumberOfQuestions(),
+                dto.getScore(),
+                dto.getTime(),
                 toUserEntity(dto.getUserId()),
                 toQuizEntity(dto.getQuizId()),
                 dto.getGameQuestions().stream()
@@ -193,7 +207,8 @@ public class DTOMapper {
             toGameEntity(gameQuestionDTO.getGameId()),
             toQuestionEntity(gameQuestionDTO.getQuestion()),
             gameQuestionDTO.getStart(),
-            gameQuestionDTO.getFinish()
+            gameQuestionDTO.getFinish(),
+            gameQuestionDTO.isValid()
         );
     }
 
@@ -225,4 +240,14 @@ public class DTOMapper {
         authDTO.setAdmin(user.getRol().equals(Rol.ADMIN) ? true : false);
         return authDTO;
     }
+
+    //RankingDTO
+    public static RankingDTO toRankingDTO(Game game) {
+        return new RankingDTO(
+            toUserDTO(game.getUser()),
+            game.getStartDate(),
+            game.getScore(),
+            game.getTime()
+        );
+    } 
 }

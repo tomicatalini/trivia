@@ -60,10 +60,6 @@ public class TriviaImportServiceImpl implements TriviaImportService {
         List<Category> categories = importCategories(quiz.get().getId());
 
         for (Category category : categories) {
-
-            // if (category.getId() > 10) {
-            //     return;
-            // }
             
             // Obtengo la cantidad de preguntas existentes para la categoría
             int categoryQuestionCount = getCategoryQuestionCount(category.getId());
@@ -168,19 +164,6 @@ public class TriviaImportServiceImpl implements TriviaImportService {
                 default:
 
                         for (OpenTriviaQuestionDTO dto : response.getResults()) {
-                            
-                            // List<Answer> answers = new ArrayList<>();
-
-                            // Answer correct = new Answer(dto.getCorrect_answer(), true);
-                            // answers.add(correct);
-
-                            // for (String wrong : dto.getIncorrect_answers()) {
-                            //     Answer incorrect = new Answer(wrong, false);
-                            //     answers.add(incorrect);
-                            // }
-
-
-                            // createQuestion(dto.getQuestion(), dto.getType(), Level.valueOf(dto.getDifficulty().toUpperCase()), category, quiz, answers);
                            
                             Question question = new Question();
                             question.setQuestion(dto.getQuestion());
