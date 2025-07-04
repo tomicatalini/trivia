@@ -14,6 +14,6 @@ import lombok.Setter;
 public class RankingDTO {
     private UserDTO user;
     private Date date;
-    private long score;
-    private long time;
+    private double score;
+    private double time;
 }

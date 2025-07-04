@@ -11,6 +11,6 @@ public interface GameService {
     GameDTO createGame(Long quizId, Long playerId, Long categoryId, String level, int numberOfQuestions);
     GameDTO getGameById(Long gameId);
     List<GameDTO> getAllGamesByPlayerId(Long playerId);
-    Long endGame(Long gameId, Date endDate,List<GameQuestionDTO> gamesQuestions);
+    double endGame(Long gameId, Date endDate,List<GameQuestionDTO> gamesQuestions);
     List<RankingDTO> findTopRanking(int numberOfGames);
 }

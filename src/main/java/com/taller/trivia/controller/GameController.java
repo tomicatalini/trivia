@@ -47,7 +47,7 @@ public class GameController {
     @PostMapping("/end")
     public ResponseEntity<?> endGame(@RequestBody GameDTO gameDTO) {
         try {
-            long score = this.gameService.endGame(
+            double score = this.gameService.endGame(
                     gameDTO.getGameId(), 
                     gameDTO.getEndDate(), 
                     gameDTO.getGameQuestions()

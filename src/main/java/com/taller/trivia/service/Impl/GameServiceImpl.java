@@ -115,7 +115,7 @@ public class GameServiceImpl implements GameService {
     } 
 
     @Override
-    public Long endGame(Long gameId, Date endDate, List<GameQuestionDTO> gameQuestions) {
+    public double endGame(Long gameId, Date endDate, List<GameQuestionDTO> gameQuestions) {
         GameDTO gameDTO = this.getGameById(gameId);
 
         if (gameDTO == null) {
@@ -129,8 +129,10 @@ public class GameServiceImpl implements GameService {
                 .toList());
 
         game = this.calculateScore(game);
+        System.out.println("score: " + game.getScore());
         gameDao.save(game);
 
+        System.out.println("score: " + game.getScore());
         return game.getScore();
     }
 
@@ -143,39 +145,38 @@ public class GameServiceImpl implements GameService {
     }
 
     public Game calculateScore(Game game) {
-        long score = 0;
-        long timeTaken = 0;
+        double score = 0d;
+        double timeTaken = 0d;
         int totalQuestions = game.getGameQuestions().size();
         int numberCorrectQuestions = 0;
-        String mode = game.getMode().name();
+        String mode = game.getMode().name();    
 
         if(mode.equals("EASY") || mode.equals("MEDIUM") || mode.equals("HARD")) {
             
-            numberCorrectQuestions = game.getNumberOfQuestions();
-            long difficultyFactor = this.calculateQuestionDifficultyFactor(mode);
             
-
             for(GameQuestion gq : game.getGameQuestions()) {
                 timeTaken += (gq.getFinish().getTime() - gq.getStart().getTime()) / 1000;
-            }
+                numberCorrectQuestions += gq.isValid() ? 1 : 0;
+            }   
             
-            long timeFactor = this.calculateTimeFactor(timeTaken);
-
-            score =  numberCorrectQuestions / totalQuestions * difficultyFactor * timeFactor;
+            long difficultyFactor = this.calculateQuestionDifficultyFactor(mode);           
+            long timeFactor = this.calculateTimeFactor(timeTaken / totalQuestions);
+            
+            score = ((double) numberCorrectQuestions / totalQuestions) * (double) difficultyFactor * (double) timeFactor;
         } else {
             for (GameQuestion gq : game.getGameQuestions()) {
                 numberCorrectQuestions = gq.isValid() ? 1 : 0;
 
                 long difficultyFactor = this.calculateQuestionDifficultyFactor(gq.getQuestion().getLevel().name());
 
-                long questionTimeTaken = (gq.getFinish().getTime() - gq.getStart().getTime()) / 1000;
+                double questionTimeTaken = (gq.getFinish().getTime() - gq.getStart().getTime()) / 1000;
                 long timeFactor = this.calculateTimeFactor(questionTimeTaken);
                 timeTaken += questionTimeTaken;
 
-                score +=  numberCorrectQuestions / totalQuestions * difficultyFactor * timeFactor;
+                score +=  ((double)numberCorrectQuestions / totalQuestions) * (double) difficultyFactor * (double) timeFactor;
             }
         }
-
+    
         game.setScore(score);
         game.setTime(timeTaken);
 
@@ -197,23 +198,15 @@ public class GameServiceImpl implements GameService {
         }
     }
 
-    public long calculateTimeFactor(long timeTaken) {
+    public long calculateTimeFactor(double timeTaken) {
         // Factor de tiempo: 5 puntos <= 5 segundos, 3 puntos 5 < x <= 20 segundos, 1 punto x > 20 segundos
-        if (timeTaken <= 5) {
+        int time = (int) timeTaken;
+        if (time <= 5) {
             return 5L;
-        } else if (timeTaken <= 20) {
+        } else if (time <= 20) {
             return 3L;
         } else {
             return 1L;
         }
-    }
-
-    public long calculateFactors(String difficult, Date start, Date finish) {
-        long difficultyFactor = this.calculateQuestionDifficultyFactor(difficult);
-
-        long timeTaken = (finish.getTime() - start.getTime()) / 1000;
-        long timeFactor = this.calculateTimeFactor(timeTaken);
-
-        return difficultyFactor * timeFactor;
     }
 }

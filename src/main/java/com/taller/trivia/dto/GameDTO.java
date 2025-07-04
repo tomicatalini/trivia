@@ -18,8 +18,8 @@ public class GameDTO {
     private Date endDate;
     private String mode;
     private int numberOfQuestions;
-    private long score;
-    private long time;
+    private double score;
+    private double time;
     private long userId;
     private long quizId;
     private List<GameQuestionDTO> gameQuestions;

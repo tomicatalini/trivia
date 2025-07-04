@@ -39,8 +39,8 @@ public class Game {
     private GameMode mode;
 
     private int numberOfQuestions;
-    private long score;
-    private long time;
+    private double score;
+    private double time;
 
     //Relaciones
     @ManyToOne
