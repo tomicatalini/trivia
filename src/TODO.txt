@@ -1,8 +1,20 @@
 TODO List:
 
-- Generar funcionalidad para obtener y cargar la base de datos desde la API  OK
-- Revisar excepeciones
-- Armar controladores
+- Generar funcionalidad para obtener y cargar la base de datos desde la API:LISTO
+- Revisar excepeciones: LISTO
+- Armar controladores: LISTO
 - Actualizar diagrama de clases
     - Se agrego tmb el quizId en Category: para poder obtener todas las categorias de un quiz. 
 
+- Ranking corregir los detalles.
+
+- Revisar Calculo puntaje: LISTO
+    - Score hay que cambiar el tipo "Long" a "Double": LISTO
+    - Calculo: LISTO
+
+- Revisar el tiempo final calculado: LISTO
+- Hay que sacar la cantidad 5 de la selección de preguntas: LISTO (Por letra)
+- Falta reloj de tiempo insumido, lo suma desde que inicia hasta que termina, necesitamos que haga la suma por pregunta.
+- Registrarse: redireccionar al login si es success. LISTO
+- Armar el "¿Cómo jugar?" usando la consigna del tp. LISTO (Se hizo un como jugar y un about para los datos del tp)
+- Fuentes de las preguntas y permisos de preguntas en UserAdmin.

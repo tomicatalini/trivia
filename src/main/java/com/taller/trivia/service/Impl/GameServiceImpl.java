@@ -1,5 +1,7 @@
 package com.taller.trivia.service.Impl;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -14,6 +16,7 @@ import com.taller.trivia.dao.UserDao;
 import com.taller.trivia.dto.GameDTO;
 import com.taller.trivia.dto.GameQuestionDTO;
 import com.taller.trivia.dto.RankingDTO;
+import com.taller.trivia.dto.ResumeDTO;
 import com.taller.trivia.model.Game;
 import com.taller.trivia.model.GameMode;
 import com.taller.trivia.model.GameQuestion;
@@ -115,7 +118,7 @@ public class GameServiceImpl implements GameService {
     } 
 
     @Override
-    public double endGame(Long gameId, Date endDate, List<GameQuestionDTO> gameQuestions) {
+    public ResumeDTO endGame(Long gameId, Date endDate, List<GameQuestionDTO> gameQuestions) {
         GameDTO gameDTO = this.getGameById(gameId);
 
         if (gameDTO == null) {
@@ -129,11 +132,19 @@ public class GameServiceImpl implements GameService {
                 .toList());
 
         game = this.calculateScore(game);
-        System.out.println("score: " + game.getScore());
         gameDao.save(game);
 
-        System.out.println("score: " + game.getScore());
-        return game.getScore();
+        ResumeDTO resume = new ResumeDTO(
+            game.getId(),
+            game.getMode().name(),
+            game.getNumberOfQuestions(),
+            game.getScore(),
+            game.getTime()
+        );
+
+        System.out.println("Game ended: " + resume.toString());
+
+        return resume;
     }
 
     @Override
@@ -145,12 +156,12 @@ public class GameServiceImpl implements GameService {
     }
 
     public Game calculateScore(Game game) {
-        double score = 0d;
+        Double score = 0d;
         double timeTaken = 0d;
         int totalQuestions = game.getGameQuestions().size();
         int numberCorrectQuestions = 0;
         String mode = game.getMode().name();    
-
+        
         if(mode.equals("EASY") || mode.equals("MEDIUM") || mode.equals("HARD")) {
             
             
@@ -161,7 +172,7 @@ public class GameServiceImpl implements GameService {
             
             long difficultyFactor = this.calculateQuestionDifficultyFactor(mode);           
             long timeFactor = this.calculateTimeFactor(timeTaken / totalQuestions);
-            
+            System.out.println("(" + numberCorrectQuestions + " / " + totalQuestions + ") * " + difficultyFactor + " * " + timeFactor);
             score = ((double) numberCorrectQuestions / totalQuestions) * (double) difficultyFactor * (double) timeFactor;
         } else {
             for (GameQuestion gq : game.getGameQuestions()) {
@@ -176,8 +187,11 @@ public class GameServiceImpl implements GameService {
                 score +=  ((double)numberCorrectQuestions / totalQuestions) * (double) difficultyFactor * (double) timeFactor;
             }
         }
-    
-        game.setScore(score);
+
+        BigDecimal bd = new BigDecimal(score);
+        bd = bd.setScale(2, RoundingMode.HALF_UP);
+
+        game.setScore(bd.doubleValue());
         game.setTime(timeTaken);
 
         return game;
@@ -199,11 +213,11 @@ public class GameServiceImpl implements GameService {
     }
 
     public long calculateTimeFactor(double timeTaken) {
-        // Factor de tiempo: 5 puntos <= 5 segundos, 3 puntos 5 < x <= 20 segundos, 1 punto x > 20 segundos
-        int time = (int) timeTaken;
-        if (time <= 5) {
+        // Factor de tiempo: 5 puntos <= 5 segundos, 3 puntos 5 < x <= 20 segundos, 1 punto x > 20 segundo
+       
+        if ( Double.compare(timeTaken,5d) <= 0) {
             return 5L;
-        } else if (time <= 20) {
+        } else if (Double.compare(timeTaken,20d) <= 0) {
             return 3L;
         } else {
             return 1L;

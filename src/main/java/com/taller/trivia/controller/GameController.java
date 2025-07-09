@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taller.trivia.dto.GameDTO;
+import com.taller.trivia.dto.ResumeDTO;
 import com.taller.trivia.dto.StartGameRequestDTO;
 import com.taller.trivia.service.GameService;
 import com.taller.trivia.util.ErrorMessageLoader;
@@ -47,13 +48,13 @@ public class GameController {
     @PostMapping("/end")
     public ResponseEntity<?> endGame(@RequestBody GameDTO gameDTO) {
         try {
-            double score = this.gameService.endGame(
+            ResumeDTO resume = this.gameService.endGame(
                     gameDTO.getGameId(), 
                     gameDTO.getEndDate(), 
                     gameDTO.getGameQuestions()
                 );
             
-            return ResponseHandler.handleResponse(score);
+            return ResponseHandler.handleResponse(resume);
         } catch (Exception e) {
             return ResponseHandler.handleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
                     ErrorMessageLoader.getMessage("SERVER_ERROR"), e.getMessage());
